@@ -20,6 +20,7 @@ def add_exp_args(parser):
 
     # Train params
     parser.add_argument('--epochs', type=int, default=10)
+    parser.add_argument('--max_grad_norm', type=float, default=0.0)
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument('--parallel', type=str, default=None, choices={'dp'})
@@ -95,6 +96,9 @@ class FlowExperiment(BaseExperiment):
         if args.log_wandb:
             wandb.init(config=args_dict, project=args.project, id=args.name, dir=self.log_path)
 
+        # training params
+        self.max_grad_norm = args.max_grad_norm
+
     def log_fn(self, epoch, train_dict, eval_dict):
 
         # Tensorboard
@@ -139,6 +143,8 @@ class FlowExperiment(BaseExperiment):
             self.optimizer.zero_grad()
             loss = elbo_bpd(self.model, x.to(self.args.device))
             loss.backward()
+            if self.max_grad_norm > 0:
+                grad_norm = torch.nn.utils.clip_grad_norm(self.model.parameters(), self.max_grad_norm)
             self.optimizer.step()
             if self.scheduler_iter: self.scheduler_iter.step()
             loss_sum += loss.detach().cpu().item() * len(x)
