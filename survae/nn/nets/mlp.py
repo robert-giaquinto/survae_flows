@@ -11,8 +11,10 @@ class MLP(nn.Sequential):
         if in_lambda: layers.append(LambdaLayer(in_lambda))
         for in_size, out_size in zip([input_size] + hidden_units[:-1], hidden_units):
             layers.append(nn.Linear(in_size, out_size))
-            layers.append(act_module(activation))
+            if activation is not None:
+                layers.append(act_module(activation))
         layers.append(nn.Linear(hidden_units[-1], output_size))
         if out_lambda: layers.append(LambdaLayer(out_lambda))
 
         super(MLP, self).__init__(*layers)
+

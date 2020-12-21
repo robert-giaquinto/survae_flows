@@ -13,9 +13,10 @@ class DynamicallyBinarizedOMNIGLOT(TrainTestLoader):
     using dynamic binarization.
     """
 
-    def __init__(self, root=DATA_PATH, flatten=False):
+    def __init__(self, root=DATA_PATH, flatten=False, conditional=False, super_resolution=False):
 
         self.root = root
+        self.y_classes = None
 
         # Define transformations
         trans = [DynamicBinarize()]

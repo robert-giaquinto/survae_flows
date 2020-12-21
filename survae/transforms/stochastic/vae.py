@@ -19,8 +19,8 @@ class VAE(StochasticTransform):
 
     def __init__(self, decoder, encoder):
         super(VAE, self).__init__()
-        self.decoder = decoder
         self.encoder = encoder
+        self.decoder = decoder
 
     def forward(self, x):
         z, log_qz = self.encoder.sample_with_log_prob(context=x)

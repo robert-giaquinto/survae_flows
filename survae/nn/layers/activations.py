@@ -3,6 +3,14 @@ import torch.nn as nn
 from survae.nn.layers import gelu, swish, concat_relu, concat_elu, gated_tanh
 
 
+class Identity(nn.Module):
+    def __init__(self):
+        super(Identity, self).__init__()
+
+    def forward(self, x):
+        return x
+
+
 class GELU(nn.Module):
     '''GELU activation (https://arxiv.org/abs/1606.08415) as used in Sparse Transformers (https://arxiv.org/abs/1904.10509).'''
 

@@ -1,15 +1,16 @@
 import torch
 import torch.nn as nn
-from survae.nn.layers import GELU, Swish, ConcatReLU, ConcatELU
+from survae.nn.layers import GELU, Swish, ConcatReLU, ConcatELU, Identity
 
-act_strs = {'elu', 'relu', 'gelu', 'swish'}
+act_strs = {'elu', 'relu', 'gelu', 'swish', 'none'}
 concat_act_strs = {'concat_elu', 'concat_relu'}
 
 
 def act_module(act_str, allow_concat=False):
     if allow_concat: assert act_str in act_strs + concat_act_strs, 'Got invalid activation {}'.format(act_str)
     else:            assert act_str in act_strs, 'Got invalid activation {}'.format(act_str)
-    if act_str == 'relu': return nn.ReLU()
+    if act_str == 'none': return Identity()
+    elif act_str == 'relu': return nn.ReLU()
     elif act_str == 'elu': return nn.ELU()
     elif act_str == 'gelu': return GELU()
     elif act_str == 'swish': return Swish()
@@ -20,7 +21,8 @@ def act_module(act_str, allow_concat=False):
 def act_factor(act_str, allow_concat=False):
     if allow_concat: assert act_str in act_strs + concat_act_strs, 'Got invalid activation {}'.format(act_str)
     else:            assert act_str in act_strs, 'Got invalid activation {}'.format(act_str)
-    if act_str == 'relu': return 1
+    if act_str == 'none': return 1
+    elif act_str == 'relu': return 1
     elif act_str == 'elu': return 1
     elif act_str == 'gelu': return 1
     elif act_str == 'swish': return 1

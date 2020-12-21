@@ -1,10 +1,15 @@
 import os
 import importlib
+from importlib import util as ilutil
 
 
 def get_survae_path():
-    init_path = importlib.util.find_spec("survae").origin
-    path = os.path.dirname(os.path.dirname(init_path))
+    init_path = ilutil.find_spec("survae").origin
+    if 'site-packages' in init_path:
+        path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(init_path))))))
+    else:
+        path = os.path.dirname(os.path.dirname(init_path))
+
     return path
 
 
@@ -27,8 +32,10 @@ def get_data_path():
         default_path = os.path.join(path, 'data')
         set_data_path(default_path)
         os.mkdir(default_path)
+
     with open(file, 'r') as f:
         data_path = f.readline()
+
     return data_path
 
 

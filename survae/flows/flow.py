@@ -23,13 +23,16 @@ class Flow(Distribution):
         self.transforms = nn.ModuleList(transforms)
         self.lower_bound = any(transform.lower_bound for transform in transforms)
 
-    def log_prob(self, x):
+    def log_prob(self, x, return_z=False):
         log_prob = torch.zeros(x.shape[0], device=x.device)
         for transform in self.transforms:
             x, ldj = transform(x)
             log_prob += ldj
         log_prob += self.base_dist.log_prob(x)
-        return log_prob
+        if return_z:
+            return x, log_prob.mean()
+        else:
+            return log_prob
 
     def sample(self, num_samples):
         z = self.base_dist.sample(num_samples)

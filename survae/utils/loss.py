@@ -9,7 +9,10 @@ def loglik_nats(model, x):
 
 def loglik_bpd(model, x):
     """Compute the log-likelihood in bits per dim."""
-    return - model.log_prob(x).sum() / (math.log(2) * x.shape.numel())
+    if type(x) is tuple:
+        return - model.log_prob(x[0], context=x[1]).sum() / (math.log(2) * x[0].shape.numel())
+    else:
+        return - model.log_prob(x).sum() / (math.log(2) * x.shape.numel())
 
 
 def elbo_nats(model, x):

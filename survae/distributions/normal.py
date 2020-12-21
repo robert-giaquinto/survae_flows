@@ -47,5 +47,5 @@ class ConvNormal2d(DiagonalNormal):
         super(DiagonalNormal, self).__init__()
         assert len(shape) == 3
         self.shape = torch.Size(shape)
-        self.loc = torch.nn.Parameter(torch.zeros(1, shape[0], 1, 1))
-        self.log_scale = torch.nn.Parameter(torch.zeros(1, shape[0], 1, 1))
+        self.loc = nn.Parameter(torch.zeros(1, shape[0], 1, 1))
+        self.log_scale = nn.Parameter(torch.zeros(1, shape[0], 1, 1))

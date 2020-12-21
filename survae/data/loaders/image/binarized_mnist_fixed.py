@@ -15,8 +15,8 @@ class FixedBinarizedMNIST(TrainValidTestLoader):
     for a remark on the different versions of MNIST.
     '''
 
-    def __init__(self, root=DATA_PATH, download=True):
-
+    def __init__(self, root=DATA_PATH, download=True, conditional=False, super_resolution=False):
+        self.y_classes = None
         self.train = FixedBinaryMNISTDataset(root, split='train', download=download)
         self.valid = FixedBinaryMNISTDataset(root, split='valid')
         self.test = FixedBinaryMNISTDataset(root, split='test')

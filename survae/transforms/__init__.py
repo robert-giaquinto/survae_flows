@@ -4,3 +4,4 @@ from .cond_base import ConditionalTransform
 from .bijections import *
 from .surjections import *
 from .stochastic import *
+from .injections import *

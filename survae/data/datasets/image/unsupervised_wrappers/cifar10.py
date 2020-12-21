@@ -3,9 +3,9 @@ from torchvision.datasets import CIFAR10
 from survae.data import DATA_PATH
 
 
-class UnsupervisedCIFAR10(CIFAR10):
+class UnsupervisedCIFAR10Dataset(CIFAR10):
     def __init__(self, root=DATA_PATH, train=True, transform=None, download=False):
-        super(UnsupervisedCIFAR10, self).__init__(root,
+        super(UnsupervisedCIFAR10Dataset, self).__init__(root,
                                                   train=train,
                                                   transform=transform,
                                                   download=download)
@@ -18,4 +18,4 @@ class UnsupervisedCIFAR10(CIFAR10):
         Returns:
             tuple: (image, target) where target is index of the target class.
         """
-        return super(UnsupervisedCIFAR10, self).__getitem__(index)[0]
+        return super(UnsupervisedCIFAR10Dataset, self).__getitem__(index)[0]

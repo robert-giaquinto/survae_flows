@@ -4,9 +4,9 @@ from torchvision.datasets import MNIST
 from survae.data import DATA_PATH
 
 
-class UnsupervisedMNIST(MNIST):
+class UnsupervisedMNISTDataset(MNIST):
     def __init__(self, root=DATA_PATH, train=True, transform=None, download=False):
-        super(UnsupervisedMNIST, self).__init__(root,
+        super(UnsupervisedMNISTDataset, self).__init__(root,
                                                 train=train,
                                                 transform=transform,
                                                 download=download)
@@ -19,7 +19,7 @@ class UnsupervisedMNIST(MNIST):
         Returns:
             tuple: (image, target) where target is index of the target class.
         """
-        return super(UnsupervisedMNIST, self).__getitem__(index)[0]
+        return super(UnsupervisedMNISTDataset, self).__getitem__(index)[0]
 
     @property
     def raw_folder(self):

@@ -12,7 +12,7 @@ class ImageNet32(TrainTestLoader):
     (van den Oord et al., 2016): https://arxiv.org/abs/1601.06759
     '''
 
-    def __init__(self, root=DATA_PATH, download=True, num_bits=8, pil_transforms=[]):
+    def __init__(self, root=DATA_PATH, download=True, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False):
 
         self.root = root
 
