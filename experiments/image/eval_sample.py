@@ -67,4 +67,4 @@ model = model.eval()
 if eval_args.double: model = model.double()
 
 samples = model.sample(eval_args.samples).cpu().float()/(2**args.num_bits - 1)
-vutils.save_image(samples, fp=path_samples, nrow=eval_args.nrow)
+vutils.save_image(samples, path_samples, nrow=eval_args.nrow)

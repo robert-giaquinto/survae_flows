@@ -1,4 +1,7 @@
 import torch.optim as optim
+from torch.optim.lr_scheduler import ExponentialLR
+from survae.optim.schedulers import LinearWarmupScheduler
+
 
 optim_choices = {'sgd', 'adam', 'adamax'}
 
@@ -11,15 +14,18 @@ def add_optim_args(parser):
     parser.add_argument('--warmup', type=int, default=None)
     parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--momentum_sqr', type=float, default=0.999)
+    parser.add_argument('--exponential_lr', type=eval, default=False)
+
 
 
 def get_optim_id(args):
-    return 'base'
+    return f"{args.optimizer}_lr{str(args.lr)[2:]}"
 
 
 def get_optim(args, model):
     assert args.optimizer in optim_choices
 
+    # Base optimizer
     if args.optimizer == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
     elif args.optimizer == 'adam':
@@ -27,7 +33,17 @@ def get_optim(args, model):
     elif args.optimizer == 'adamax':
         optimizer = optim.Adamax(model.parameters(), lr=args.lr, betas=(args.momentum, args.momentum_sqr))
 
-    scheduler_iter = None
-    scheduler_epoch = None
+    # warmup LR
+    if args.warmup is not None:
+        scheduler_iter = LinearWarmupScheduler(optimizer, total_epoch=args.warmup)
+    else:
+        scheduler_iter = None
+
+    # Exponentially decay LR
+    if args.exponential_lr:
+        scheduler_epoch = ExponentialLR(optimizer, gamma=0.995)
+    else:
+        scheduler_epoch = None
+    
 
     return optimizer, scheduler_iter, scheduler_epoch

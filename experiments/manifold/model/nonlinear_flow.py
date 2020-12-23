@@ -13,7 +13,7 @@ from .dequantization_flow import DequantizationFlow
 from .densenet import densenet as net
 
 
-class NonlinearFlow(NDPFlow):
+class NDPNonlinearFlow(NDPFlow):
 
     def __init__(self, data_shape, num_bits, num_scales, num_steps, actnorm, pooling,
                  dequant, dequant_steps, dequant_context,
@@ -76,6 +76,9 @@ class NonlinearFlow(NDPFlow):
         #base1 = ConvNormal2d(current_shape)
         base1 = StandardNormal(current_shape)
 
+        # for reference save the shape output by the bijective flow
+        self.flow_shape = current_shape
+
         # Non-dimension preserving flows
         input_dim = current_shape[0] * current_shape[1] * current_shape[2]
         encoder = ConditionalNormal(MLP(input_dim, 2*latent_size,
@@ -86,10 +89,11 @@ class NonlinearFlow(NDPFlow):
             hidden_units=list(reversed(vae_hidden_units)),
             activation=vae_activation,
             out_lambda=lambda x: x.view(x.shape[0], current_shape[0]*2, current_shape[1], current_shape[2])), split_dim=1)
+        
         transforms.append(VAE(encoder=encoder, decoder=decoder))
 
         # Base distribution for non-dimension preserving portion of flow
         base2 = StandardNormal((latent_size,))
 
-        super(NonlinearFlow, self).__init__(base_dist=[base1, base2], transforms=transforms)
+        super(NDPNonlinearFlow, self).__init__(base_dist=[base1, base2], transforms=transforms)
 

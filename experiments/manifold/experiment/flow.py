@@ -65,7 +65,7 @@ class FlowExperiment(BaseExperiment):
             model = DataParallelDistribution(model)
 
         # Init parent
-        log_path = os.path.join(self.log_base, data_id, model_id, optim_id, args.name)
+        log_path = os.path.join(self.log_base, data_id, model_id, optim_id, f"seed{args.seed}", args.name)
         super(FlowExperiment, self).__init__(model=model,
                                              optimizer=optimizer,
                                              scheduler_iter=scheduler_iter,
@@ -144,7 +144,7 @@ class FlowExperiment(BaseExperiment):
             loss = elbo_bpd(self.model, x.to(self.args.device))
             loss.backward()
             if self.max_grad_norm > 0:
-                grad_norm = torch.nn.utils.clip_grad_norm(self.model.parameters(), self.max_grad_norm)
+                grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
             self.optimizer.step()
             if self.scheduler_iter: self.scheduler_iter.step()
             loss_sum += loss.detach().cpu().item() * len(x)

@@ -76,5 +76,8 @@ class PoolFlow(Flow):
             else:
                 if actnorm: transforms.append(ActNormBijection2d(current_shape[0]))
 
-        super(PoolFlow, self).__init__(base_dist=ConvNormal2d(current_shape),
-                                       transforms=transforms)
+
+        # for reference save the shape output by the bijective flow
+        self.flow_shape = current_shape
+
+        super(PoolFlow, self).__init__(base_dist=ConvNormal2d(current_shape), transforms=transforms)

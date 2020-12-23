@@ -1,6 +1,7 @@
-from model.linear_flow import LinearFlow
-from model.nonlinear_flow import NonlinearFlow
+from model.linear_flow import NDPLinearFlow
+from model.nonlinear_flow import NDPNonlinearFlow
 from model.pool_flow import PoolFlow
+from model.vae_flow import VAEFlow
 
 
 def add_model_args(parser):
@@ -9,6 +10,7 @@ def add_model_args(parser):
     parser.add_argument('--linear', type=eval, default=True)
     parser.add_argument('--stochastic_elbo', type=eval, default=False)
     parser.add_argument('--pooling', type=str, default='none', choices={'none', 'max'})
+    parser.add_argument('--gaussian_mid', type=eval, default=False)
 
     # VAE params
     parser.add_argument('--latent_size', type=int, default=196)
@@ -37,23 +39,32 @@ def add_model_args(parser):
 
 
 def get_model_id(args):
+    # Todo: include other key model parameters as part of id
+    arch = f"scales{args.num_scales}_steps{args.num_steps}"
     if args.linear:
         if args.stochastic_elbo:
-            return 'flow_and_linear_stochastic_vae'
+            model_id = f'NDP_Linear_Stochastic_Flow_latent{args.latent_size}'
         else:
-            return 'flow_and_linear_analytic_vae'
+            model_id = f'NDP_Linear_Analytical_Flow_latent{args.latent_size}'
 
     else:
-        if args.pooling == "max":
-            return 'pool_flow_vae'
+        if args.gaussian_mid:
+            model_id = f"NDP_Regularized_VAE_{args.vae_activation}_{'_'.join([str(elt) for elt in args.vae_hidden_units])}_Flow_latent{args.latent_size}"
+        elif args.pooling == "none":
+            model_id = f"NDP_VAE_{args.vae_activation}_{'_'.join([str(elt) for elt in args.vae_hidden_units])}_Flow_latent{args.latent_size}"
+        elif args.pooling == "max":
+            model_id = 'Max_Pool_Flow'
         else:
-            return 'flow_and_nonlinear_vae'
+            raise ValueError(f"No model defined for {args.pooling} pooling")
+
+
+    return model_id + "_" + arch
 
 
 def get_model(args, data_shape, cond_shape=None):
 
     if args.linear:
-        model = LinearFlow(data_shape=data_shape,
+        model = NDPLinearFlow(data_shape=data_shape,
             num_bits=args.num_bits,
             num_scales=args.num_scales,
             num_steps=args.num_steps,
@@ -74,24 +85,11 @@ def get_model(args, data_shape, cond_shape=None):
             stochastic_elbo=args.stochastic_elbo)
 
     else:
-        if args.pooling == "max":
-            model = PoolFlow(data_shape=data_shape,
-                num_bits=args.num_bits,
-                num_scales=args.num_scales,
-                num_steps=args.num_steps,
-                actnorm=args.actnorm,
-                pooling=args.pooling,
-                dequant=args.dequant,
-                dequant_steps=args.dequant_steps,
-                dequant_context=args.dequant_context,
-                densenet_blocks=args.densenet_blocks,
-                densenet_channels=args.densenet_channels,
-                densenet_depth=args.densenet_depth,
-                densenet_growth=args.densenet_growth,
-                dropout=args.dropout,
-                gated_conv=args.gated_conv)
-        else:
-            model = NonlinearFlow(data_shape=data_shape,
+        
+        if args.gaussian_mid:
+
+            # NDP Flow but the input to the VAE is Gaussian
+            model = NDPNonlinearFlow(data_shape=data_shape,
                 num_bits=args.num_bits,
                 num_scales=args.num_scales,
                 num_steps=args.num_steps,
@@ -109,5 +107,50 @@ def get_model(args, data_shape, cond_shape=None):
                 vae_hidden_units=args.vae_hidden_units,
                 latent_size=args.latent_size,
                 vae_activation=args.vae_activation)
+
+            
+        elif args.pooling == "none":
+
+            # NDP Flow but the input to the VAE doesn't need to be Gaussian
+            model = VAEFlow(data_shape=data_shape,
+                num_bits=args.num_bits,
+                num_scales=args.num_scales,
+                num_steps=args.num_steps,
+                actnorm=args.actnorm,
+                pooling=args.pooling,
+                dequant=args.dequant,
+                dequant_steps=args.dequant_steps,
+                dequant_context=args.dequant_context,
+                densenet_blocks=args.densenet_blocks,
+                densenet_channels=args.densenet_channels,
+                densenet_depth=args.densenet_depth,
+                densenet_growth=args.densenet_growth,
+                dropout=args.dropout,
+                gated_conv=args.gated_conv,
+                vae_hidden_units=args.vae_hidden_units,
+                latent_size=args.latent_size,
+                vae_activation=args.vae_activation)
+
+        elif args.pooling == "max":
+
+            # Max pooling surjective flow
+            model = PoolFlow(data_shape=data_shape,
+                num_bits=args.num_bits,
+                num_scales=args.num_scales,
+                num_steps=args.num_steps,
+                actnorm=args.actnorm,
+                pooling=args.pooling,
+                dequant=args.dequant,
+                dequant_steps=args.dequant_steps,
+                dequant_context=args.dequant_context,
+                densenet_blocks=args.densenet_blocks,
+                densenet_channels=args.densenet_channels,
+                densenet_depth=args.densenet_depth,
+                densenet_growth=args.densenet_growth,
+                dropout=args.dropout,
+                gated_conv=args.gated_conv)
+            
+        else:
+            raise ValueError(f"No model defined for {args.pooling} pooling")
 
     return model

@@ -15,6 +15,7 @@ def add_optim_args(parser):
     parser.add_argument('--momentum_sqr', type=float, default=0.999)
     parser.add_argument('--gamma', type=float, default=0.995)
 
+    
 
 def get_optim_id(args):
     return 'expdecay'
