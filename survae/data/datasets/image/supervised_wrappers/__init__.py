@@ -1,0 +1,5 @@
+from survae.data.datasets.image.supervised_wrappers.mnist import SupervisedMNISTDataset
+from survae.data.datasets.image.supervised_wrappers.cifar10 import SupervisedCIFAR10Dataset
+from survae.data.datasets.image.supervised_wrappers.celeba import SupervisedCelebADataset
+from survae.data.datasets.image.supervised_wrappers.svnh import SupervisedSVHNDataset
+from survae.data.datasets.image.supervised_wrappers.fashion_mnist import SupervisedFashionMNISTDataset

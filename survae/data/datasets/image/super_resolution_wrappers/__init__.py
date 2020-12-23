@@ -1,0 +1,1 @@
+from survae.data.datasets.image.super_resolution_wrappers.mnist import SuperResolutionMNISTDataset
