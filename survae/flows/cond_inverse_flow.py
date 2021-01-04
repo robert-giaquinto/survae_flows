@@ -48,10 +48,13 @@ class ConditionalInverseFlow(ConditionalDistribution):
             z, log_prob = self.base_dist.sample_with_log_prob(context)
         else:
             z, log_prob = self.base_dist.sample_with_log_prob(context_size(context))
+        
         for transform in self.transforms:
             if isinstance(transform, ConditionalTransform):
                 z, ldj = transform(z, context)
             else:
                 z, ldj = transform(z)
+
             log_prob -= ldj
+
         return z, log_prob

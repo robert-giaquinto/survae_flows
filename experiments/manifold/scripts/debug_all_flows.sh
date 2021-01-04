@@ -2,159 +2,102 @@ cd /export/scratch/robert/survae_flows
 
 # Load defaults for all experiments
 #source /export/scratch/robert/survae_flows/experiments/manifold/scripts/experiment_config.sh
+seed=101
+compression=vae
 epochs=2
+optimizer=adamax
 max_grad_norm=1.0
-warmup=1
-exponential_lr=False
+warmup=100
+exponential_lr=True
+early_stop=10
+eval_every=5
+annealing_schedule=0
 
 dataset=mnist
-batch_size=128
+batch_size=32
 device=cuda
 
 trainable_sigma=True
-latent_size=196
+latent_size=192
+vae_hiden_units="384"
+vae_activation=relu
+base_distributions="n"
+
+dequant=flow
+dequant_steps=1
+dequant_context=5
 
 num_scales=2
 num_steps=1
-dequant=uniform
-densenet_blocks=1
-densenet_channels=32
-densenet_depth=1
-densenet_growth=8
+#coupling_network=transformer
+coupling_blocks=1
+coupling_channels=8
+coupling_depth=1
+coupling_growth=4
+coupling_dropout=0.2
+coupling_mixtures=4
 
 
-for seed in 101 #102 103
+for linear in False True
 do
 
-    printf "\n----------------------Seed ${seed}----------------------\n"
+    for stochastic_elbo in True #False
+    do
+        if [[ ${stochastic_elbo} == 'False' && ${linear} == 'False' ]]; then
+            continue
+        fi
 
-    # linear analytic
-    python experiments/manifold/train.py --dataset ${dataset} \
-           --linear True \
-           --stochastic_elbo False \
-           --batch_size ${batch_size} \
-           --epochs ${epochs} \
-           --warmup ${warmup} \
-           --exponential_lr ${exponential_lr} \
-           --max_grad_norm ${max_grad_norm} \
-           --trainable_sigma ${trainable_sigma} \
-           --latent_size ${latent_size} \
-           --num_scales ${num_scales} \
-           --num_steps ${num_steps} \
-           --dequant ${dequant} \
-           --densenet_blocks ${densenet_blocks} \
-           --densenet_channels ${densenet_channels} \
-           --densenet_depth ${densenet_depth} \
-           --densenet_growth ${densenet_growth} \
-           --device ${device} \
-           --seed ${seed}
-    
-    printf "Linear Analytically NDP Flow Done\n"
-
-    # linear stochastic
-    python experiments/manifold/train.py --dataset ${dataset} \
-           --linear True \
-           --stochastic_elbo True \
-           --batch_size ${batch_size} \
-           --epochs ${epochs} \
-           --warmup ${warmup} \
-           --exponential_lr ${exponential_lr} \
-           --max_grad_norm ${max_grad_norm} \
-           --trainable_sigma ${trainable_sigma} \
-           --latent_size ${latent_size} \
-           --num_scales ${num_scales} \
-           --num_steps ${num_steps} \
-           --dequant ${dequant} \
-           --densenet_blocks ${densenet_blocks} \
-           --densenet_channels ${densenet_channels} \
-           --densenet_depth ${densenet_depth} \
-           --densenet_growth ${densenet_growth} \
-           --device ${device} \
-           --seed ${seed}
-    
-    printf "Linear Stochastically NDP Flow Done\n"
-
-    # Linear VAE
-    python experiments/manifold/train.py --dataset ${dataset} \
-           --linear False \
-           --stochastic_elbo True \
-           --pooling none \
-           --vae_activation none \
-           --vae_hidden_units 256 \
-           --batch_size ${batch_size} \
-           --epochs ${epochs} \
-           --warmup ${warmup} \
-           --exponential_lr ${exponential_lr} \
-           --max_grad_norm ${max_grad_norm} \
-           --trainable_sigma ${trainable_sigma} \
-           --latent_size ${latent_size} \
-           --num_scales ${num_scales} \
-           --num_steps ${num_steps} \
-           --dequant ${dequant} \
-           --densenet_blocks ${densenet_blocks} \
-           --densenet_channels ${densenet_channels} \
-           --densenet_depth ${densenet_depth} \
-           --densenet_growth ${densenet_growth} \
-           --device ${device} \
-           --seed ${seed}
-
-    printf "Linear VAE (256) Trained Done\n"
+        for coupling_network in  densenet transformer conv
+        do
+            
 
 
-    # Non-Linear VAE
-    python experiments/manifold/train.py --dataset ${dataset} \
-           --linear False \
-           --stochastic_elbo True \
-           --pooling none \
-           --vae_activation relu \
-           --vae_hidden_units 512 256 \
-           --batch_size ${batch_size} \
-           --epochs ${epochs} \
-           --warmup ${warmup} \
-           --exponential_lr ${exponential_lr} \
-           --max_grad_norm ${max_grad_norm} \
-           --trainable_sigma ${trainable_sigma} \
-           --latent_size ${latent_size} \
-           --num_scales ${num_scales} \
-           --num_steps ${num_steps} \
-           --dequant ${dequant} \
-           --densenet_blocks ${densenet_blocks} \
-           --densenet_channels ${densenet_channels} \
-           --densenet_depth ${densenet_depth} \
-           --densenet_growth ${densenet_growth} \
-           --device ${device} \
-           --seed ${seed}
-
-    printf "ReLU VAE (512, 256) Done\n"
-
-
-    # Max Pooling VAE
-    python experiments/manifold/train.py --dataset ${dataset} \
-           --linear False \
-           --stochastic_elbo True \
-           --pooling max \
-           --vae_activation relu \
-           --vae_hidden_units 128 \
-           --batch_size ${batch_size} \
-           --epochs ${epochs} \
-           --warmup ${warmup} \
-           --exponential_lr ${exponential_lr} \
-           --max_grad_norm ${max_grad_norm} \
-           --trainable_sigma ${trainable_sigma} \
-           --latent_size ${latent_size} \
-           --num_scales ${num_scales} \
-           --num_steps ${num_steps} \
-           --dequant ${dequant} \
-           --densenet_blocks ${densenet_blocks} \
-           --densenet_channels ${densenet_channels} \
-           --densenet_depth ${densenet_depth} \
-           --densenet_growth ${densenet_growth} \
-           --device ${device} \
-           --seed ${seed}
-
-    printf "Max Pooling (128) Done\n"
-
+            printf "\n---------- Running: ${compression}, linear=${linear}, stochastic=${stochastic_elbo}, coupling=${coupling_network} (${base_distributions}) ----------\n"
+        
+            python experiments/manifold/train.py \
+                   --device               ${device} \
+                   --seed                 ${seed} \
+                   --dataset              ${dataset} \
+                   \
+                   --compression          ${compression} \
+                   --linear               ${linear} \
+                   --stochastic_elbo      ${stochastic_elbo} \
+                   \
+                   --batch_size           ${batch_size} \
+                   --optimizer            ${optimizer} \
+                   --epochs               ${epochs} \
+                   --warmup               ${warmup} \
+                   --exponential_lr       ${exponential_lr} \
+                   --max_grad_norm        ${max_grad_norm} \
+                   --annealing_schedule   ${annealing_schedule} \
+                   --early_stop           ${early_stop} \
+                   --eval_every           ${eval_every} \
+                   \
+                   --vae_activation       ${vae_activation} \
+                   --vae_hidden_units     ${vae_hiden_units} \
+                   --base_distributions   ${base_distributions} \
+                   --trainable_sigma      ${trainable_sigma} \
+                   --latent_size          ${latent_size} \
+                   \
+                   --num_scales           ${num_scales} \
+                   --num_steps            ${num_steps} \
+                   \
+                   --dequant              ${dequant} \
+                   --dequant_steps        ${dequant_steps} \
+                   --dequant_context      ${dequant_context} \
+                   \
+                   --coupling_network     ${coupling_network} \
+                   --coupling_blocks      ${coupling_blocks} \
+                   --coupling_channels    ${coupling_channels} \
+                   --coupling_depth       ${coupling_depth} \
+                   --coupling_growth      ${coupling_growth} \
+                   --coupling_dropout     ${coupling_dropout} \
+                   --coupling_mixtures    ${coupling_mixtures} \
+                   --name                 debug \
+                ;
+        done
+    done
 done
 
 
-echo "Job complete"
+printf "\n\nJob complete!\n\n"

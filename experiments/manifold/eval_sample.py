@@ -40,7 +40,7 @@ with open(path_args, 'rb') as f:
 ## Specify data ##
 ##################
 
-_, _, data_shape = get_data(args)
+_, eval_loader, data_shape = get_data(args)
 
 ###################
 ## Specify model ##
@@ -66,5 +66,12 @@ model = model.to(device)
 model = model.eval()
 if eval_args.double: model = model.double()
 
-samples = model.sample(eval_args.samples).cpu().float()/(2**args.num_bits - 1)
+samples = model.sample(eval_args.samples).cpu().float() / (2**args.num_bits - 1)
 vutils.save_image(samples, path_samples, nrow=eval_args.nrow)
+#samples = torch.clamp(model.sample(eval_args.samples), max=1).cpu()
+#vutils.save_image(samples.float(), path_samples, nrow=eval_args.nrow)
+
+# save real images too
+path_true_samples = '{}/samples/true_ep{}_s{}.png'.format(eval_args.model, checkpoint['current_epoch'], eval_args.seed)
+imgs = next(iter(eval_loader))[:eval_args.samples]
+vutils.save_image(imgs.cpu().float(), path_true_samples, nrow=eval_args.nrow)

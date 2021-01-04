@@ -2,33 +2,42 @@ import math
 import torch
 
 
-def loglik_nats(model, x):
+def loglik_nats(model, x, beta=None):
     """Compute the log-likelihood in nats."""
-    return - model.log_prob(x).mean()
+    if beta is None:
+        return - model.log_prob(x).mean()
+    else:
+        return - model.log_prob(x, beta=beta).mean()
 
 
-def loglik_bpd(model, x):
+def loglik_bpd(model, x, beta=None):
     """Compute the log-likelihood in bits per dim."""
     if type(x) is tuple:
-        return - model.log_prob(x[0], context=x[1]).sum() / (math.log(2) * x[0].shape.numel())
+        if beta is None:
+            return - model.log_prob(x[0], context=x[1]).sum() / (math.log(2) * x[0].shape.numel())
+        else:
+            return - model.log_prob(x[0], context=x[1], beta=beta).sum() / (math.log(2) * x[0].shape.numel())
     else:
-        return - model.log_prob(x).sum() / (math.log(2) * x.shape.numel())
+        if beta is None:
+            return - model.log_prob(x).sum() / (math.log(2) * x.shape.numel())
+        else:
+            return - model.log_prob(x, beta=beta).sum() / (math.log(2) * x.shape.numel())
 
 
-def elbo_nats(model, x):
+def elbo_nats(model, x, beta=None):
     """
     Compute the ELBO in nats.
     Same as .loglik_nats(), but may improve readability.
     """
-    return loglik_nats(model, x)
+    return loglik_nats(model, x, beta)
 
 
-def elbo_bpd(model, x):
+def elbo_bpd(model, x, beta=None):
     """
     Compute the ELBO in bits per dim.
     Same as .loglik_bpd(), but may improve readability.
     """
-    return loglik_bpd(model, x)
+    return loglik_bpd(model, x, beta)
 
 
 def iwbo(model, x, k):

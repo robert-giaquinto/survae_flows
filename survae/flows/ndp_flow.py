@@ -16,12 +16,11 @@ class NDPFlow(Distribution):
     The last transform given is assumed to be the transform that changes
     the flows dimensionality.
 
-    base_dist must be a an iterable of Distributions, generally of length 2 or more:
-    the base_dist[0] is of same dimension as data, and base_dist[1] changes
-    dimension, etc.
-
-    TODO: base_dist should match length of transforms. each
-          transform will corresponding to a sequence of flow steps
+    base_dist must be a an iterable of Distributions, of length 2:
+    the base_dist[0] matches the size of the output from the bijective flows,
+    and can be set to None of the 
+    Next, base_dist[1] matches the shape of the change in dimension flows, etc.
+    
     """
 
     def __init__(self, base_dist, transforms):
@@ -37,28 +36,44 @@ class NDPFlow(Distribution):
         self.transforms = nn.ModuleList(transforms)
         self.lower_bound = any(transform.lower_bound for transform in transforms)
 
-    def log_prob(self, x):
+    def log_prob(self, x, beta=1.0):
+        """
+        Calculate log probability of x.
+        Args:
+            x    = Input data
+            beta = Beta annealing scalar, controlling the weight of the NDP portion of the flow.
+                   Beta can be annealed from 0 to 1 over the first few epochs, however this is
+                   only applicable when the bijective portion of the flow is regularized to
+                   have a Gaussian output.
+        """
         log_prob = torch.zeros(x.shape[0], device=x.device)
 
         # Dimension preserving flows
         for transform in self.transforms[:-1]:
             x, ldj = transform(x)
             log_prob += ldj
-        log_prob += self.base_dist[0].log_prob(x)
+        # can impose pre-ndp transformation to be distributed like base_dist[0]
+        if self.base_dist[0] is not None:
+            log_prob += self.base_dist[0].log_prob(x)
+        else:
+            # using a single base distribution
+            assert beta == 1.0, f'Beta annealing for NDP flows is only applicable when using 2 base distributions.'
 
         # Non-dimension preserving flow
-        x, ldj = self.transforms[-1](x)
-        log_prob += ldj
-        if self.base_dist[1] is not None:
-            log_prob += self.base_dist[1].log_prob(x)
+        x, ndp_ldj = self.transforms[-1](x)
+        log_pz = self.base_dist[-1].log_prob(x) # if self.base_dist[1] is not None else 0.0
+
+        log_prob += beta * (log_pz + ndp_ldj)
         return log_prob
 
     def sample(self, num_samples):
         # map low dimensional noise to higher dimensions
         z = self.base_dist[-1].sample(num_samples)
         x = self.transforms[-1].inverse(z)
+        #x = self.base_dist[0].sample(num_samples)
         for transform in reversed(self.transforms[:-1]):
             x = transform.inverse(x)
+
         return x
 
     def sample_with_log_prob(self, num_samples):

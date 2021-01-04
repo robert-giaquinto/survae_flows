@@ -27,6 +27,7 @@ class Flow(Distribution):
         log_prob = torch.zeros(x.shape[0], device=x.device)
         for transform in self.transforms:
             x, ldj = transform(x)
+            #print(transform.__call__, x.size(), "min =", x.min().data[0], "max =", x.max().data[0])
             log_prob += ldj
         log_prob += self.base_dist.log_prob(x)
         if return_z:

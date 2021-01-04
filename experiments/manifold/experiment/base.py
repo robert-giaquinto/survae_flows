@@ -1,13 +1,17 @@
 import os
 import pickle
 import torch
+import numpy as np
+
+from survae.utils import count_parameters
+
 from .utils import get_args_table, get_metric_table
 
 
 class BaseExperiment(object):
 
     def __init__(self, model, optimizer, scheduler_iter, scheduler_epoch,
-                 log_path, eval_every, check_every):
+                 log_path, eval_every, check_every, save_samples):
 
         # Objects
         self.model = model
@@ -23,11 +27,18 @@ class BaseExperiment(object):
         self.eval_every = eval_every
         self.check_every = check_every
 
+        # Qualitative evaluation
+        self.save_samples = save_samples
+
         # Initialize
         self.current_epoch = 0
         self.train_metrics = {}
         self.eval_metrics = {}
         self.eval_epochs = []
+
+        #self.early_stop_count = 0
+        self.best_loss = np.inf
+        self.best_loss_epoch = 0
 
     def train_fn(self, epoch):
         raise NotImplementedError()
@@ -38,6 +49,12 @@ class BaseExperiment(object):
     def log_fn(self, epoch, train_dict, eval_dict):
         raise NotImplementedError()
 
+    def sample_fn(self):
+        raise NotImplementedError()
+
+    def stop_early(self, loss_dict, epoch):
+        return False
+        
     def log_train_metrics(self, train_dict):
         if len(self.train_metrics)==0:
             for metric_name, metric_value in train_dict.items():
@@ -55,7 +72,6 @@ class BaseExperiment(object):
                 self.eval_metrics[metric_name].append(metric_value)
 
     def create_folders(self):
-
         # Create log folder
         os.makedirs(self.log_path)
         print("Storing logs in:", self.log_path)
@@ -66,18 +82,21 @@ class BaseExperiment(object):
             print("Storing checkpoints in:", self.check_path)
 
     def save_args(self, args):
-
         # Save args
         with open(os.path.join(self.log_path, 'args.pickle'), "wb") as f:
             pickle.dump(args, f)
 
         # Save args table
         args_table = get_args_table(vars(args))
-        with open(os.path.join(self.log_path,'args_table.txt'), "w") as f:
+        with open(os.path.join(self.log_path, 'args_table.txt'), "w") as f:
             f.write(str(args_table))
 
-    def save_metrics(self):
+    def save_architecture(self):
+        with open(os.path.join(self.log_path, 'architecture.txt'), "w") as f:
+            f.write(str(self.model))
+            f.write(f"Number of model parameters: {count_parameters(self.model)}\n")
 
+    def save_metrics(self):
         # Save metrics
         with open(os.path.join(self.log_path,'metrics_train.pickle'), 'wb') as f:
             pickle.dump(self.train_metrics, f)
@@ -115,7 +134,6 @@ class BaseExperiment(object):
         if self.scheduler_epoch: self.scheduler_epoch.load_state_dict(checkpoint['scheduler_epoch'])
 
     def run(self, epochs):
-
         for epoch in range(self.current_epoch, epochs):
 
             # Train
@@ -127,8 +145,10 @@ class BaseExperiment(object):
                 eval_dict = self.eval_fn(epoch)
                 self.log_eval_metrics(eval_dict)
                 self.eval_epochs.append(epoch)
+                converged = self.stop_early(eval_dict, epoch)
             else:
                 eval_dict = None
+                converged = False
 
             # Log
             self.save_metrics()
@@ -136,5 +156,13 @@ class BaseExperiment(object):
 
             # Checkpoint
             self.current_epoch += 1
-            if (epoch+1) % self.check_every == 0:
+            if (epoch+1) % self.check_every == 0 or converged:
                 self.checkpoint_save()
+
+            # Early stopping
+            if converged:
+                break
+
+        # Sampling
+        if self.save_samples:
+            self.sample_fn()

@@ -39,8 +39,6 @@ data_id = get_data_id(args)
 
 model = get_model(args, data_shape=data_shape)
 model_id = get_model_id(args)
-print(model)
-print(f"Input Shape:\t{data_shape}\nFlow Shape:\t{model.flow_shape}\nLatent Shape:\t{args.latent_size} (for VAEs only!)")
 
 #######################
 ## Specify optimizer ##
@@ -65,3 +63,4 @@ exp = FlowExperiment(args=args,
                      scheduler_epoch=scheduler_epoch)
 
 exp.run()
+

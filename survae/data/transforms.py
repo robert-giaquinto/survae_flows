@@ -12,8 +12,14 @@ class StaticBinarize():
 
 
 class DynamicBinarize():
+    def __init__(self, as_float=False):
+        self.as_float = as_float
+        
     def __call__(self, image):
-        return image.bernoulli().long()
+        if self.as_float:
+            return image.bernoulli().float()
+        else:
+            return image.bernoulli().long()
 
 
 class Quantize():
@@ -29,4 +35,5 @@ class Quantize():
         image = image * 255 # [0, 1] -> [0, 255]
         if self.num_bits != 8:
             image = torch.floor(image / 2 ** (8 - self.num_bits)) # [0, 255] -> [0, 2**num_bits - 1]
+
         return image.long()

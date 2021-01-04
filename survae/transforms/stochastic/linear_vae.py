@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import math
 
+from torch.distributions import Normal
+
 from survae.transforms.stochastic import StochasticTransform
 from survae.utils import sum_except_batch
 
@@ -25,11 +27,11 @@ class LinearVAE(StochasticTransform):
             Rezende et al., 2014, https://arxiv.org/abs/1401.4082
     '''
 
-    def __init__(self, input_dim=784, hidden_dim=20,
-        trainable_sigma=True, sigma_init=1.0, stochastic_elbo=False):
+    def __init__(self, input_dim, hidden_dim, trainable_sigma=True, sigma_init=1.0, stochastic_elbo=False):
 
         super(LinearVAE, self).__init__()
 
+        self.input_shape = None
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.trainable_sigma = trainable_sigma
@@ -37,10 +39,10 @@ class LinearVAE(StochasticTransform):
         self.stochastic_elbo = stochastic_elbo
 
         # define model parameters
-        self.q_logvar = nn.Parameter(torch.ones(hidden_dim, requires_grad=True))
-        self.enc_weight = nn.Parameter(torch.zeros(input_dim, hidden_dim, requires_grad=True))
+        self.z_logvar = nn.Parameter(torch.zeros(hidden_dim, requires_grad=True))
+        self.enc_weight = nn.Parameter(torch.zeros(input_dim, hidden_dim, requires_grad=True))  # V
         self.mu = nn.Parameter(torch.zeros(input_dim, requires_grad=True))
-        self.dec_weight = nn.Parameter(torch.zeros(hidden_dim, input_dim, requires_grad=True))
+        self.dec_weight = nn.Parameter(torch.zeros(hidden_dim, input_dim, requires_grad=True))  # W
 
         if sigma_init is not None:
             self.log_sigma = nn.Parameter(torch.log(sigma_init * torch.ones(1, requires_grad=trainable_sigma)))
@@ -48,16 +50,19 @@ class LinearVAE(StochasticTransform):
             self.log_sigma = nn.Parameter(torch.ones(1, requires_grad=trainable_sigma))
 
     def forward(self, x):
+        """
+        Encode x to latent z, also return log likelihood p(x|z)
+        """
+        # reshape to a flattened vector
+        self.input_shape = x.size()
         x = x.view(x.size(0), -1)
-        batch_size = x.size(0)
-        q_mu = torch.matmul(x - self.mu, self.enc_weight)
-
-        # stochastic method of projecting to z
-        # TODO update with analytic solution too (not necessary though)
-        std = torch.exp(0.5 * self.q_logvar.unsqueeze(0)).repeat(batch_size, 1)
+        
+        # Project x to z
+        z_mean = torch.matmul(x - self.mu, self.enc_weight)
+        z_std = torch.exp(0.5 * self.z_logvar.unsqueeze(0)).repeat(x.size(0), 1)
         FloatTensor = torch.cuda.FloatTensor if x.is_cuda else torch.FloatTensor
-        eps = FloatTensor(q_mu.size()).normal_()
-        z = eps.mul(std).add_(q_mu)
+        eps = FloatTensor(z_mean.size()).normal_()
+        z = eps.mul(z_std).add_(z_mean)
 
         if self.stochastic_elbo:
             x_recon = torch.matmul(z, self.dec_weight)
@@ -65,11 +70,21 @@ class LinearVAE(StochasticTransform):
         else:
             lhood = self.analytic_lhood(x)
 
-        kl = self.gaussian_kl_divergence(q_mu, p_mean = 0.0, p_logvar=2 * math.log(1.0))
-        elbo = lhood - kl
-        return z, elbo
+        #kl = self.gaussian_kl_divergence(z_mean, self.z_logvar, p_mean=0.0, p_logvar=math.log(1.0))
+        #elbo = lhood - kl
+        return z, lhood
 
-    def gaussian_kl_divergence(self, q_mu, p_mean, p_logvar):
+    def inverse(self, z):
+        """
+        Decode latent z into data x
+        """
+        x_mean = torch.matmul(z, self.dec_weight)
+        x_sigma = torch.exp(self.log_sigma)
+        decoder =  Normal(loc=x_mean, scale=x_sigma)
+        x_recon = decoder.rsample().view((z.size(0), self.input_shape[1], self.input_shape[2], self.input_shape[3]))
+        return x_recon
+
+    def gaussian_kl_divergence(self, q_mean, q_logvar, p_mean, p_logvar):
         """
         KL Divergence between two Gaussian distributions.
 
@@ -81,20 +96,14 @@ class LinearVAE(StochasticTransform):
 
         Args:
         q_mean: Mean of proposal distribution.
+        q_logvar: Log-variance of proposal distribution.
         p_mean: Mean of prior distribution.
         p_logvar: Log-variance of prior distribution
 
-        Note:
-        q_logvar is Log-variance of proposal distribution and accessed from class parameters
-
         Returns: The KL divergence between q and p ( KL(q||p) ).
         """
-        rval = 0.5 * (p_logvar - self.q_logvar +
-                      (torch.exp(self.q_logvar) + (q_mu - p_mean)**2) / math.exp(p_logvar) - 1.0)
-        # average over batches
-        #rval = torch.mean(rval, dim=0)
-        # sum over all dimensions
-        #rval = torch.sum(rval)
+        rval = (p_logvar - q_logvar) + \
+            0.5 * ((torch.exp(q_logvar) + (q_mean - p_mean)**2) / math.exp(p_logvar) - 1.0)
         return sum_except_batch(rval)
 
     def analytic_lhood(self, x):
@@ -109,10 +118,10 @@ class LinearVAE(StochasticTransform):
         wv = torch.matmul(self.enc_weight, self.dec_weight)
         x_sub_mu = x - self.mu
 
-        wvx = torch.matmul(x_sub_mu, wv)  # does this mess with batch dim? bmm()?
+        wvx = torch.matmul(x_sub_mu, wv)
         xvwwvx = torch.sum(wvx * wvx, dim=1)
-        q_sigma_sq = torch.exp(self.q_logvar.unsqueeze(1))
-        tr_wdw = torch.trace(torch.matmul(self.dec_weight.t(), q_sigma_sq * self.dec_weight))
+        z_var = torch.exp(self.z_logvar.unsqueeze(1))
+        tr_wdw = torch.trace(torch.matmul(self.dec_weight.t(), z_var * self.dec_weight))
         xwvx = torch.sum(wvx * x_sub_mu, dim=1)
         xx = torch.sum(x_sub_mu * x_sub_mu, dim=1)
 
@@ -133,7 +142,7 @@ class LinearVAE(StochasticTransform):
             x: The input tensor.
             logits: The stochastic output of the decoder.
 
-        Returns: MEAN_i(log p(x_i|z_i))
+        Returns: Mean_i(log p(x_i|z_i))
         """
         input_dim = x.size(1)
         sigma_sq = torch.exp(self.log_sigma)
@@ -142,7 +151,5 @@ class LinearVAE(StochasticTransform):
         rval = sum_except_batch(log_base + log_inner)
         return rval
 
-    def inverse(self, z):
-        raise NotImplementedError()
 
 

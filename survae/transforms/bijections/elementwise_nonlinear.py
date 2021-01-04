@@ -94,16 +94,23 @@ class Logit(Sigmoid):
 
     def forward(self, x):
         assert torch.min(x) >= 0 and torch.max(x) <= 1, 'x must be in [0,1]'
-        x = torch.clamp(x, self.eps, 1 - self.eps)
+        #x = torch.clamp(x, self.eps, 1 - self.eps)
+        x = self.eps + (1.0 - 2.0 * self.eps) * x
 
-        z = (1 / self.temperature) * (torch.log(x) - torch.log1p(-x))
+        z = (1.0 / self.temperature) * (torch.log(x) - torch.log1p(-x))
         ldj = - sum_except_batch(torch.log(self.temperature) - F.softplus(-self.temperature * z) - F.softplus(self.temperature * z))
+        #ldj = - sum_except_batch(torch.log(x - x * x) + math.log(1.0 - 2.0 * self.eps))
+        
         return z, ldj
 
     def inverse(self, z):
         z = self.temperature * z
-        x = torch.sigmoid(z)
+        #x = torch.sigmoid(z)
+        x = (torch.sigmoid(z) - self.eps) / (1.0 - 2.0 * self.eps)
         return x
+
+    def __repr__(self):
+        return ('{name}({eps})'.format(name=self.__class__.__name__, **self.__dict__))
 
 
 class Softplus(Bijection):
@@ -113,7 +120,7 @@ class Softplus(Bijection):
 
     def forward(self, x):
         '''
-        z = softplus(x) = log(1+exp(z))
+        z = softplus(x) = log(1+exp(x))
         ldj = log(dsoftplus(x)/dx) = log(1/(1+exp(-x))) = log(sigmoid(x))
         '''
         z = F.softplus(x)

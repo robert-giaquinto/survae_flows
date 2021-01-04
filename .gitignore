@@ -9,3 +9,4 @@ venv/
 */._.DS_Store
 experiments/manifold/log/*
 experiments/image/log/*
+examples/results/*.png

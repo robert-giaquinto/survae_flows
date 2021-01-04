@@ -9,12 +9,12 @@ optim_choices = {'sgd', 'adam', 'adamax'}
 def add_optim_args(parser):
 
     # Model params
-    parser.add_argument('--optimizer', type=str, default='adam', choices=optim_choices)
+    parser.add_argument('--optimizer', type=str, default='adamax', choices=optim_choices)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--warmup', type=int, default=None)
     parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--momentum_sqr', type=float, default=0.999)
-    parser.add_argument('--exponential_lr', type=eval, default=False)
+    parser.add_argument('--exponential_lr', type=eval, default=True)
 
 
 
@@ -34,7 +34,7 @@ def get_optim(args, model):
         optimizer = optim.Adamax(model.parameters(), lr=args.lr, betas=(args.momentum, args.momentum_sqr))
 
     # warmup LR
-    if args.warmup is not None:
+    if args.warmup is not None and args.warmup > 0:
         scheduler_iter = LinearWarmupScheduler(optimizer, total_epoch=args.warmup)
     else:
         scheduler_iter = None

@@ -26,7 +26,6 @@ def get_data_id(args):
 def get_data(args):
     assert args.dataset in dataset_choices
 
-    # Dataset
     data_shape = get_data_shape(args.dataset)
     pil_transforms = get_augmentation(args.augmentation, args.dataset, data_shape)
     if args.dataset == 'cifar10':

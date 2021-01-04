@@ -45,7 +45,7 @@ class DiagonalNormal(Distribution):
 class ConvNormal2d(DiagonalNormal):
     def __init__(self, shape):
         super(DiagonalNormal, self).__init__()
-        assert len(shape) == 3
+        assert len(shape) == 3, f"len(shape) must be 3, not {len(shape)}"
         self.shape = torch.Size(shape)
         self.loc = nn.Parameter(torch.zeros(1, shape[0], 1, 1))
         self.log_scale = nn.Parameter(torch.zeros(1, shape[0], 1, 1))

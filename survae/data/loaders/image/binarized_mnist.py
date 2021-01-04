@@ -1,5 +1,5 @@
 from survae.data.datasets.image import UnsupervisedMNISTDataset, SupervisedMNISTDataset
-from torchvision.transforms import Compose, ToTensor
+from torchvision.transforms import Compose, ToTensor #, ConvertImageDtype
 from survae.data.transforms import Flatten, DynamicBinarize
 from survae.data import TrainTestLoader, DATA_PATH
 
@@ -16,13 +16,14 @@ class DynamicallyBinarizedMNIST(TrainTestLoader):
     for a remark on the different versions of MNIST.
     '''
 
-    def __init__(self, root=DATA_PATH, download=True, flatten=False, conditional=False, super_resolution=False):
+    def __init__(self, root=DATA_PATH, download=True, flatten=False, as_float=False, conditional=False, super_resolution=False):
 
         self.root = root
         self.y_classes = 10
 
         # Define transformations
-        trans = [ToTensor(), DynamicBinarize()]
+        trans = [ToTensor(), DynamicBinarize(as_float=as_float)]
+        #if as_float: trans.append(ConvertImageDtype(torch.float))
         if flatten: trans.append(Flatten())
 
         # Load data

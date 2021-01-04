@@ -7,7 +7,7 @@ concat_act_strs = {'concat_elu', 'concat_relu'}
 
 
 def act_module(act_str, allow_concat=False):
-    if allow_concat: assert act_str in act_strs + concat_act_strs, 'Got invalid activation {}'.format(act_str)
+    if allow_concat: assert act_str in act_strs | concat_act_strs, 'Got invalid activation {}'.format(act_str)
     else:            assert act_str in act_strs, 'Got invalid activation {}'.format(act_str)
     if act_str == 'none': return Identity()
     elif act_str == 'relu': return nn.ReLU()

@@ -30,14 +30,17 @@ def logistic_mixture_transform(inputs, logit_weights, means, log_scales, eps=1e-
         max_scales = torch.sum(torch.exp(log_scales), dim=-1, keepdim=True)
         init_lower, _ = (means - 20 * max_scales).min(dim=-1)
         init_upper, _ = (means + 20 * max_scales).max(dim=-1)
-        return bisection_inverse(fn=lambda x: mix_cdf(x),
-                                 z=inputs,
-                                 init_x=torch.zeros_like(inputs),
-                                 init_lower=init_lower,
-                                 init_upper=init_upper,
-                                 eps=eps,
-                                 max_iters=max_iters)
+        z = bisection_inverse(fn=lambda x: mix_cdf(x),
+                              z=inputs,
+                              init_x=torch.zeros_like(inputs),
+                              init_lower=init_lower,
+                              init_upper=init_upper,
+                              eps=eps,
+                              max_iters=max_iters)
+        ldj = -mix_log_pdf(z)
+
     else:
         z = mix_cdf(inputs)
         ldj = mix_log_pdf(inputs)
-        return z, ldj
+        
+    return z, ldj

@@ -4,5 +4,6 @@ from .activations_functional import *
 from .activations import *
 from .activations_factory import *
 from .constraints_factory import *
-from .conv import *
 from .linear import *
+from .norm import *
+from .conv2d_layer import *

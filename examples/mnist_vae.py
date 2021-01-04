@@ -34,7 +34,7 @@ train_loader, test_loader = data.get_data_loaders(128)
 ## Model ##
 ###########
 
-latent_size = 20
+latent_size = 392
 
 encoder = ConditionalNormal(MLP(784, 2*latent_size,
                                 hidden_units=[512,256],
@@ -61,7 +61,7 @@ optimizer = Adam(model.parameters(), lr=1e-3)
 ###########
 
 print('Training...')
-for epoch in range(20):
+for epoch in range(15):
     l = 0.0
     for i, x in enumerate(train_loader):
         optimizer.zero_grad()
@@ -93,5 +93,5 @@ print('Sampling...')
 img = next(iter(test_loader))[:64]
 samples = model.sample(64)
 
-vutils.save_image(img.cpu().float(), fp='mnist_data.png', nrow=8)
-vutils.save_image(samples.cpu().float(), fp='mnist_vae.png', nrow=8)
+vutils.save_image(img.cpu().float(), 'mnist_data.png', nrow=8)
+vutils.save_image(samples.cpu().float(), 'mnist_vae.png', nrow=8)
