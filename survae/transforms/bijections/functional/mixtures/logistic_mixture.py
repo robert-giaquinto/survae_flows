@@ -37,10 +37,9 @@ def logistic_mixture_transform(inputs, logit_weights, means, log_scales, eps=1e-
                               init_upper=init_upper,
                               eps=eps,
                               max_iters=max_iters)
-        ldj = -mix_log_pdf(z)
-
+        #ldj = -mix_log_pdf(z)
+        return z
     else:
         z = mix_cdf(inputs)
         ldj = mix_log_pdf(inputs)
-        
-    return z, ldj
+        return z, ldj

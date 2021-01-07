@@ -3,6 +3,7 @@ from survae.utils import sum_except_batch
 from survae.transforms.bijections.functional.mixtures import gaussian_mixture_transform, logistic_mixture_transform, censored_logistic_mixture_transform
 from survae.transforms.bijections.functional.mixtures import get_mixture_params, get_flowpp_params
 from survae.transforms.bijections.coupling import CouplingBijection
+from survae.transforms.bijections.elementwise_nonlinear import SigmoidInverse
 
 
 class GaussianMixtureCouplingBijection(CouplingBijection):
@@ -65,17 +66,18 @@ class LogisticMixtureCouplingBijection(CouplingBijection):
 
         logit_weights, means, log_scales = get_mixture_params(elementwise_params, num_mixtures=self.num_mixtures)
 
-        z, ldj_elementwise = logistic_mixture_transform(inputs=inputs,
-                                                        logit_weights=logit_weights,
-                                                        means=means,
-                                                        log_scales=log_scales,
-                                                        eps=self.eps,
-                                                        max_iters=self.max_iters,
-                                                        inverse=inverse)
+        x = logistic_mixture_transform(inputs=inputs,
+                                       logit_weights=logit_weights,
+                                       means=means,
+                                       log_scales=log_scales,
+                                       eps=self.eps,
+                                       max_iters=self.max_iters,
+                                       inverse=inverse)
 
         if inverse:
-            return z
+            return x
         else:
+            z, ldj_elementwise = x
             ldj = sum_except_batch(ldj_elementwise)
             return z, ldj
 
@@ -94,6 +96,7 @@ class LogisticMixtureAffineCouplingBijection(CouplingBijection):
         self.set_bisection_params()
         assert callable(scale_fn)
         self.scale_fn = scale_fn
+        #self.sigmoid_inv = SigmoidInverse()
 
     def set_bisection_params(self, eps=1e-10, max_iters=100):
         self.max_iters = max_iters
@@ -102,9 +105,8 @@ class LogisticMixtureAffineCouplingBijection(CouplingBijection):
     def _output_dim_multiplier(self):
         return 3 * self.num_mixtures + 2
 
-    def _elementwise(self, x, elementwise_params, inverse):
+    def _elementwise_forward(self, x, elementwise_params):
         assert elementwise_params.shape[-1] == self._output_dim_multiplier()
-
         unconstrained_scale, shift, logit_weights, means, log_scales = get_flowpp_params(elementwise_params, num_mixtures=self.num_mixtures)
         scale = self.scale_fn(unconstrained_scale)
         log_scales = log_scales.clamp(min=-7)  # From the code in original Flow++ paper
@@ -115,24 +117,36 @@ class LogisticMixtureAffineCouplingBijection(CouplingBijection):
                                                         log_scales=log_scales,
                                                         eps=self.eps,
                                                         max_iters=self.max_iters,
-                                                        inverse=inverse)
+                                                        inverse=False)
 
-        if inverse:
-            z = (x - shift) / scale
-            return z
-        else:
-            z = scale * x + shift
-            logistic_ldj = sum_except_batch(ldj_elementwise)
-            scale_ldj = sum_except_batch(torch.log(scale))
-            ldj = logistic_ldj + scale_ldj
-            
-            return z, ldj
+        # logistic inverse transform
+        #x, sigmoid_ldj = self.sigmoid_inv(x)
 
-    def _elementwise_forward(self, x, elementwise_params):
-        return self._elementwise(x, elementwise_params, inverse=False)
+        # affine transformation
+        z = scale * x + shift
+        logistic_ldj = sum_except_batch(ldj_elementwise)
+        scale_ldj = sum_except_batch(torch.log(scale))
+        ldj = logistic_ldj + scale_ldj #+ sigmoid_ldj
+        return z, ldj
 
     def _elementwise_inverse(self, z, elementwise_params):
-        return self._elementwise(z, elementwise_params, inverse=True)
+        assert elementwise_params.shape[-1] == self._output_dim_multiplier()
+        unconstrained_scale, shift, logit_weights, means, log_scales = get_flowpp_params(elementwise_params, num_mixtures=self.num_mixtures)
+        scale = self.scale_fn(unconstrained_scale)
+        log_scales = log_scales.clamp(min=-7)  # From the code in original Flow++ paper
+        x = (z - shift) / scale
+        #x = torch.sigmoid(x)
+        x = x.clamp(1e-5, 1.0 - 1e-5)
+        x = logistic_mixture_transform(inputs=x,
+                                       logit_weights=logit_weights,
+                                       means=means,
+                                       log_scales=log_scales,
+                                       eps=self.eps,
+                                       max_iters=self.max_iters,
+                                       inverse=True)
+        return x
+
+
 
 
 class CensoredLogisticMixtureCouplingBijection(CouplingBijection):

@@ -86,6 +86,25 @@ class Sigmoid(Bijection):
         return x
 
 
+class SigmoidInverse(Bijection):
+    def __init__(self, temperature=1, eps=0.0):
+        super(SigmoidInverse, self).__init__()
+        self.eps = eps
+        self.register_buffer('temperature', torch.Tensor([temperature]))
+
+    def forward(self, z):
+        assert torch.min(z) >= 0 and torch.max(z) <= 1, f'input must be in [0,1] not [{z.min().data.item()}, {z.max().data.item()}]'
+        z = torch.clamp(z, self.eps, 1 - self.eps)
+        x = (1 / self.temperature) * (torch.log(z) - torch.log1p(-z))
+        ldj = sum_except_batch(-torch.log(z) - torch.log(1.0 - z))
+        return x, ldj
+
+    def inverse(self, x):
+        x = self.temperature * x
+        z = torch.sigmoid(x)
+        return z
+    
+
 class Logit(Sigmoid):
     def __init__(self, temperature=1, eps=1e-6):
         super(Logit, self).__init__()

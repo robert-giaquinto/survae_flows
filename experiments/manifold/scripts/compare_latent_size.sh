@@ -22,6 +22,7 @@ vae_activation=relu
 linear=False
 stochastic_elbo=True
 
+
 printf "\nFor compression=${vae}, vae_activation=${vae_activation}, linear=${linear}, coupling=${coupling_network} (${base_distributions}), and varying latent_sz\n"
 
 
@@ -52,6 +53,7 @@ do
                --annealing_schedule ${annealing_schedule} \
                --early_stop         ${early_stop} \
                --eval_every         ${eval_every} \
+               --check_every        ${check_every} \
                \
                --latent_size        ${latent_sz} \
                --vae_activation     ${vae_activation} \

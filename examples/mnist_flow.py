@@ -155,5 +155,5 @@ print('Sampling...')
 img = next(iter(test_loader))[:64]
 samples = model.sample(64)
 
-vutils.save_image(img.cpu().float(), 'mnist_data.png', nrow=8)
-vutils.save_image(samples.cpu().float(), 'mnist_conv_flow.png', nrow=8)
+vutils.save_image(img.cpu().float(), './examples/results/mnist_data.png', nrow=8)
+vutils.save_image(samples.cpu().float(), './examples/results/mnist_conv_flow.png', nrow=8)

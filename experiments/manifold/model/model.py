@@ -8,11 +8,10 @@ def add_model_args(parser):
     # Model choice
     parser.add_argument('--compression', type=str, default='none', choices={'vae', 'max', 'slice'})
     parser.add_argument('--base_distributions', type=str, default='n',
-                        help="String representing the base distributions used by the mode. 'n'=Normal, 'u'=Uniform, 'c'=ConvNorm")
+                        help="String representing the base distribution(s). 'n'=Normal, 'u'=Uniform, 'c'=ConvNorm")
     parser.add_argument('--latent_size', type=int, default=196)
     parser.add_argument('--vae_hidden_units', nargs="+", type=int, default=[512, 256])
     parser.add_argument('--vae_activation', type=str, default='none')
-
 
     # Linear Manifold Flow params
     parser.add_argument('--linear', type=eval, default=True)
@@ -34,29 +33,26 @@ def add_model_args(parser):
     parser.add_argument('--coupling_network', type=str, default="transformer", choices=["densenet", "conv", "transformer"])
     parser.add_argument('--coupling_blocks', type=int, default=1)
     parser.add_argument('--coupling_channels', type=int, default=64)
-    parser.add_argument('--coupling_depth', type=int, default=2)
+    parser.add_argument('--coupling_depth', type=int, default=1)
     parser.add_argument('--coupling_growth', type=int, default=16)
-    parser.add_argument('--coupling_dropout', type=float, default=0.0)
+    parser.add_argument('--coupling_dropout', type=float, default=0.2)
     parser.add_argument('--coupling_gated_conv', type=eval, default=True)
     parser.add_argument('--coupling_mixtures', type=int, default=16)
 
 
 def get_model_id(args):
     # Todo: include other key model parameters as part of id
-    arch = f"scales{args.num_scales}_steps{args.num_steps}"
+    arch = f"scales{args.num_scales}_steps{args.num_steps}_{args.coupling_network}"
 
     if args.compression == "vae":
     
         if args.linear:
             if args.stochastic_elbo:
-                model_id = f'NDP_Linear_Stochastic_Flow_latent{args.latent_size}'
+                model_id = f'NDP_Linear_Stochastic_Flow_latent{args.latent_size}_base{args.base_distributions}'
             else:
-                model_id = f'NDP_Linear_Analytical_Flow_latent{args.latent_size}'
+                model_id = f'NDP_Linear_Analytical_Flow_latent{args.latent_size}_base{args.base_distributions}'
         else:
-            if len(args.base_distributions) > 1:
-                model_id = f"NDP_Regularized_VAE_{args.vae_activation}_{'_'.join([str(elt) for elt in args.vae_hidden_units])}_Flow_latent{args.latent_size}"
-            else:
-                model_id = f"NDP_VAE_{args.vae_activation}_{'_'.join([str(elt) for elt in args.vae_hidden_units])}_Flow_latent{args.latent_size}"
+            model_id = f"NDP_VAE_{'_'.join([str(elt) for elt in args.vae_hidden_units])}_Flow_latent{args.latent_size}_base{args.base_distributions}"
 
     elif args.compression == "max":
         model_id = 'Max_Pool_Flow'

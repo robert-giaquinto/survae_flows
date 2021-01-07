@@ -62,6 +62,7 @@ do
                    --compression          ${compression} \
                    --linear               ${linear} \
                    --stochastic_elbo      ${stochastic_elbo} \
+                   --base_distributions   ${base_distributions} \
                    \
                    --batch_size           ${batch_size} \
                    --optimizer            ${optimizer} \
@@ -75,7 +76,6 @@ do
                    \
                    --vae_activation       ${vae_activation} \
                    --vae_hidden_units     ${vae_hiden_units} \
-                   --base_distributions   ${base_distributions} \
                    --trainable_sigma      ${trainable_sigma} \
                    --latent_size          ${latent_size} \
                    \

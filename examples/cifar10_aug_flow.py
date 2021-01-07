@@ -111,5 +111,5 @@ print('Sampling...')
 img = torch.from_numpy(data.test.data[:64]).permute([0,3,1,2])
 samples = model.sample(64)
 
-vutils.save_image(img.cpu().float()/255, fp='cifar10_data.png', nrow=8)
-vutils.save_image(samples.cpu().float()/255, fp='cifar10_aug_flow.png', nrow=8)
+vutils.save_image(img.cpu().float()/255, './examples/results/cifar10_data.png', nrow=8)
+vutils.save_image(samples.cpu().float()/255, './examples/results/cifar10_aug_flow.png', nrow=8)
