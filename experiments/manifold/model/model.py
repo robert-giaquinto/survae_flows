@@ -10,7 +10,7 @@ def add_model_args(parser):
     parser.add_argument('--base_distributions', type=str, default='n',
                         help="String representing the base distribution(s). 'n'=Normal, 'u'=Uniform, 'c'=ConvNorm")
     parser.add_argument('--latent_size', type=int, default=196)
-    parser.add_argument('--vae_hidden_units', nargs="+", type=int, default=[512, 256])
+    parser.add_argument('--vae_hidden_units', nargs="*", type=int, default=[512, 256])
     parser.add_argument('--vae_activation', type=str, default='none')
 
     # Linear Manifold Flow params

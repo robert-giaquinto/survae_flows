@@ -24,6 +24,7 @@ def add_exp_args(parser):
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument('--parallel', type=str, default=None, choices={'dp'})
+    #parser.add_argument('--amp', type=eval, default=False, help="Use automatic mixed precision")
     parser.add_argument('--resume', type=str, default=None)
 
     # Train params
@@ -119,6 +120,11 @@ class FlowExperiment(BaseExperiment):
         # training params
         self.max_grad_norm = args.max_grad_norm
 
+        # automatic mixed precision
+        # bigger changes need to make this work with dataparallel though (@autocast() decoration on each forward)
+        #self.scaler = torch.cuda.amp.GradScaler() if args.amp and args.parallel != 'dp' else None
+        self.scaler = None
+
         # save model architecture for reference
         self.save_architecture()
 
@@ -178,24 +184,80 @@ class FlowExperiment(BaseExperiment):
         super(FlowExperiment, self).run(epochs=self.args.epochs)
 
     def train_fn(self, epoch):
+        if self.scaler is not None:
+           # use automatic mixed precision
+           return self._train_amp(epoch)
+        else:
+            return self._train(epoch)
+
+    def _train_amp(self, epoch):
+        """
+        Same training procedure, but uses half precision to speed up training on GPUs
+
+        NOTE: Not currently implemented, this only runs on the latest pytorch versions
+              so I'm leaving this out for now.
+        """
         self.model.train()
         beta = self.beta_annealing(epoch)
         loss_sum = 0.0
         loss_count = 0
         for x in self.train_loader:
             self.optimizer.zero_grad()
-            loss = elbo_bpd(self.model, x.to(self.args.device), beta=beta)
-            loss.backward()
+
+            # Cast operations to mixed precision
+            with torch.cuda.amp.autocast():
+                loss = elbo_bpd(self.model, x.to(self.args.device), beta=beta)
+
+            # Scale loss and call backward() to create scaled gradients
+            self.scaler.scale(loss).backward()
+
             if self.max_grad_norm > 0:
-                grad_norm = torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(), self.max_grad_norm)
-            self.optimizer.step()
+                # Unscales the gradients of optimizer's assigned params in-place
+                self.scaler.unscale_(self.optimizer)
+                grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
+
+            # Unscale gradients and call (or skip) optimizer.step()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+            
             if self.scheduler_iter:
                 self.scheduler_iter.step()
+
+            # accumulate loss and report
             loss_sum += loss.detach().cpu().item() * len(x)
             loss_count += len(x)
             print('Training. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(
                 epoch+1, self.args.epochs, loss_count, len(self.train_loader.dataset), loss_sum/loss_count), end='\r')
+
+        print('')
+        if self.scheduler_epoch:
+            self.scheduler_epoch.step()
+        
+        return {'bpd': loss_sum/loss_count}
+
+    def _train(self, epoch):
+        self.model.train()
+        beta = self.beta_annealing(epoch)
+        loss_sum = 0.0
+        loss_count = 0
+        for x in self.train_loader:
+            self.optimizer.zero_grad()
+
+            loss = elbo_bpd(self.model, x.to(self.args.device), beta=beta)
+            loss.backward()
+
+            if self.max_grad_norm > 0:
+                grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
+
+            self.optimizer.step()
+            if self.scheduler_iter:
+                self.scheduler_iter.step()
+
+            loss_sum += loss.detach().cpu().item() * len(x)
+            loss_count += len(x)
+            print('Training. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(
+                epoch+1, self.args.epochs, loss_count, len(self.train_loader.dataset), loss_sum/loss_count), end='\r')
+
         print('')
         if self.scheduler_epoch:
             self.scheduler_epoch.step()
