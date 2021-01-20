@@ -131,6 +131,7 @@ class ManifoldFlow(NDPFlow):
         transforms.append(VAE(encoder=encoder, decoder=decoder))
 
         # Base distribution for non-dimension preserving portion of flow
+        #self.latent_size = latent_size
         if base_distributions[-1] == "n":
             base1 = StandardNormal((latent_size,))
         elif base_distributions[-1] == "c":

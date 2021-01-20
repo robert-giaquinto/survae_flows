@@ -1,8 +1,11 @@
 import torch
+import numpy as np
 import time
 import pickle
 import argparse
 from utils import set_seeds
+
+from survae.distributions import ConvNormal2d, StandardNormal, StandardUniform
 
 # Exp
 from experiment.flow import FlowExperiment, add_exp_args
@@ -14,7 +17,8 @@ from data.data import get_data, get_data_id, add_data_args
 from model.model import get_model, get_model_id, add_model_args
 
 # Optim
-from optim.base import get_optim, get_optim_id, add_optim_args
+from optim import get_optim, get_optim_id, add_optim_args
+
 
 ###########
 ## Setup ##
@@ -23,7 +27,9 @@ from optim.base import get_optim, get_optim_id, add_optim_args
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default=None)
 parser.add_argument('--new_epochs', type=int)
-parser.add_argument('--new_lr', type=float)
+parser.add_argument('--new_lr', type=float, default=None)
+parser.add_argument('--new_device', type=str, default=None)
+parser.add_argument('--base_distributions', type=str, default=None)
 more_args = parser.parse_args()
 
 path_args = '{}/args.pickle'.format(more_args.model)
@@ -39,13 +45,14 @@ with open(path_args, 'rb') as f:
 # Adjust args
 args.name = time.strftime("%Y-%m-%d_%H-%M-%S")
 args.epochs = more_args.new_epochs
-args.lr = more_args.new_lr
 args.resume = None
+if more_args.new_lr is not None: args.lr = more_args.new_lr
 
 # Store more_args
 args.start_model = more_args.model
 args.new_epochs = more_args.new_epochs
-args.new_lr = more_args.new_lr
+args.new_lr = more_args.new_lr if more_args.new_lr is not None else args.lr
+if more_args.new_device is not None: args.device = more_args.new_device
 
 ##################
 ## Specify data ##
@@ -84,10 +91,20 @@ exp = FlowExperiment(args=args,
                      scheduler_epoch=None)
 
 # Load checkpoint
-exp.checkpoint_load('{}/check/'.format(more_args.model))
+exp.checkpoint_load('{}/check/'.format(more_args.model), device=more_args.new_device)
 
-# Adjust lr
-for param_group in exp.optimizer.param_groups:
-    param_group['lr'] = more_args.new_lr
+# modify model
+if more_args.new_device is not None:
+    exp.model.to(torch.device(more_args.new_device))
+    
+if more_args.base_distributions is not None:
+    # for now just assume we're setting base to normal normal
+    exp.model.base_dist = torch.nn.ModuleList([StandardNormal(model.flow_shape), StandardNormal((args.latent_size,))])
+    print("Changed model's base distribution:\n", exp.model)
+
+if more_args.new_lr is not None:
+    # Adjust lr
+    for param_group in exp.optimizer.param_groups:
+        param_group['lr'] = more_args.new_lr
 
 exp.run()

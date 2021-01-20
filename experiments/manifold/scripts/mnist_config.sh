@@ -18,7 +18,6 @@ check_every=10
 
 # VAE parameters
 trainable_sigma=True
-latent_size=196
 vae_hidden_units="512 256"
 
 # variational dequantization

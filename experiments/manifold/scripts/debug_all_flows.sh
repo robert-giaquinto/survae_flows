@@ -6,7 +6,7 @@ seed=101
 compression=vae
 epochs=2
 optimizer=adamax
-max_grad_norm=1.0
+max_grad_norm=2.0
 warmup=100
 exponential_lr=True
 early_stop=10
@@ -14,31 +14,31 @@ eval_every=5
 annealing_schedule=0
 
 dataset=mnist
-batch_size=32
+batch_size=64
 device=cuda
 
 trainable_sigma=True
-latent_size=192
-vae_hiden_units="384"
+latent_size=784
+vae_hiden_units="512 256"
 vae_activation=relu
-base_distributions="n"
+base_distributions="cn"
 
 dequant=flow
-dequant_steps=1
-dequant_context=5
+dequant_steps=2
+dequant_context=8
 
 num_scales=2
-num_steps=1
+num_steps=8
 #coupling_network=transformer
-coupling_blocks=1
-coupling_channels=8
+coupling_blocks=2
+coupling_channels=64
 coupling_depth=1
 coupling_growth=4
 coupling_dropout=0.2
-coupling_mixtures=4
+coupling_mixtures=16
 
 
-for linear in False True
+for linear in False #True
 do
 
     for stochastic_elbo in True #False
@@ -47,7 +47,7 @@ do
             continue
         fi
 
-        for coupling_network in  densenet transformer conv
+        for coupling_network in transformer #conv densenet
         do
             
 

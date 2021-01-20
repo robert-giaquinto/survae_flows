@@ -36,7 +36,7 @@ class BaseExperiment(object):
         self.eval_metrics = {}
         self.eval_epochs = []
 
-        #self.early_stop_count = 0
+        # early stopping counters
         self.best_loss = np.inf
         self.best_loss_epoch = 0
 
@@ -122,12 +122,19 @@ class BaseExperiment(object):
                       'scheduler_epoch': self.scheduler_epoch.state_dict() if self.scheduler_epoch else None}
         torch.save(checkpoint, os.path.join(self.check_path, 'checkpoint.pt'))
 
-    def checkpoint_load(self, check_path):
-        checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'))
+    def checkpoint_load(self, check_path, device=None):
+        if device is not None:
+            device = torch.device(device)
+            checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'), map_location=device)
+        else:
+            checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'))
+
         self.current_epoch = checkpoint['current_epoch']
         self.train_metrics = checkpoint['train_metrics']
         self.eval_metrics = checkpoint['eval_metrics']
         self.eval_epochs = checkpoint['eval_epochs']
+        self.best_loss = np.inf
+        self.best_loss_epoch = checkpoint['current_epoch']
         self.model.load_state_dict(checkpoint['model'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
         if self.scheduler_iter: self.scheduler_iter.load_state_dict(checkpoint['scheduler_iter'])
