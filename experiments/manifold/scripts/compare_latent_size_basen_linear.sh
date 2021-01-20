@@ -14,19 +14,20 @@ printf "\nTraining Flows with base arguments:\n"
 cat /export/scratch/robert/survae_flows/experiments/manifold/scripts/mnist_config.sh
 
 # Configurable parameters
-base_distributions="nn"
+base_distributions="n"
 
 # Fixed parameters for this experiment
 compression=vae
-vae_activation=relu
+vae_activation=none
 linear=False
 stochastic_elbo=True
+vae_hidden_units=""
 
 
-printf "\nFor compression=${vae}, vae_activation=${vae_activation}, linear=${linear}, coupling=${coupling_network} (${base_distributions}), and varying latent_sz\n"
+printf "\nFor compression=${vae} (hidden={vae_hidden_units}), vae_activation=${vae_activation}, linear=${linear}, coupling=${coupling_network} (${base_distributions}), and varying latent_sz\n"
 
 
-for latent_sz in 98 196 392 588 784
+for latent_sz in 49 98 196 392 784
 do
     
     for seed in 101 #102 103

@@ -14,25 +14,25 @@ printf "\nTraining Flows with base arguments:\n"
 cat /export/scratch/robert/survae_flows/experiments/manifold/scripts/mnist_config.sh
 
 # Configurable parameters
-base_distributions="nn"
+base_distributions="n"
 
 # Fixed parameters for this experiment
 compression=vae
 vae_activation=relu
 linear=False
 stochastic_elbo=True
+latent_size=196
 
 
-printf "\nFor compression=${vae}, vae_activation=${vae_activation}, linear=${linear}, coupling=${coupling_network} (${base_distributions}), and varying latent_sz\n"
+printf "\nFor compression=${vae}, vae_activation=${vae_activation}, linear=${linear}, coupling=${coupling_network} (${base_distributions}), and latent={latent_size}\n"
 
-
-for latent_sz in 98 196 392 588 784
+for num_steps in 0 2 4
 do
     
     for seed in 101 #102 103
     do
 
-        printf "\n\n---------------------- Seed ${seed}, Latent Size ${latent_sz} ----------------------\n\n"
+        printf "\n\n---------------------- Seed ${seed}, Num Flow Steps ${num_steps} ----------------------\n\n"
 
         python experiments/manifold/train.py \
                --device             ${device} \
@@ -55,7 +55,7 @@ do
                --eval_every         ${eval_every} \
                --check_every        ${check_every} \
                \
-               --latent_size        ${latent_sz} \
+               --latent_size        ${latent_size} \
                --vae_activation     ${vae_activation} \
                --vae_hidden_units   ${vae_hidden_units} \
                \

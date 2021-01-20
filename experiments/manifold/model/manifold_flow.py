@@ -54,6 +54,7 @@ class ManifoldFlow(NDPFlow):
 
         
         # Dimension preserving flows
+        if num_steps == 0: num_scales = 0
         for scale in range(num_scales):
             for step in range(num_steps):
                 if actnorm: transforms.append(ActNormBijection2d(current_shape[0]))

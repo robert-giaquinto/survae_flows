@@ -26,7 +26,7 @@ stochastic_elbo=True
 printf "\nFor compression=${vae}, vae_activation=${vae_activation}, linear=${linear}, coupling=${coupling_network} (${base_distributions}), and varying latent_sz\n"
 
 
-for latent_sz in 392 784 196 #588
+for latent_sz in 784 392 196 98
 do
     
     for seed in 101 #102 103
