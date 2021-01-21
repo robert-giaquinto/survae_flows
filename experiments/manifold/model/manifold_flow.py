@@ -26,7 +26,8 @@ class ManifoldFlow(NDPFlow):
         transforms = []
         current_shape = data_shape
 
-        if dequant == 'uniform':
+        if dequant == 'uniform' or num_steps == 0 or num_scales == 0:
+            # no bijective flows defaults to only using uniform dequantization
             transforms.append(UniformDequantization(num_bits=num_bits))
         elif dequant == 'flow':            
             dequantize_flow = DequantizationFlow(data_shape=data_shape,
