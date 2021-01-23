@@ -27,6 +27,7 @@ class PoolFlow(Flow):
             dequantize_flow = DequantizationFlow(data_shape=data_shape,
                                                  num_bits=num_bits,
                                                  num_steps=dequant_steps,
+                                                 coupling_network=coupling_network,
                                                  num_context=dequant_context,
                                                  num_blocks=coupling_blocks,
                                                  mid_channels=coupling_channels,
@@ -34,8 +35,8 @@ class PoolFlow(Flow):
                                                  growth=coupling_growth,
                                                  dropout=coupling_dropout,
                                                  gated_conv=coupling_gated_conv,
-                                                 num_mixtures=coupling_mixtures,
-                                                 network=coupling_network)
+                                                 num_mixtures=coupling_mixtures)
+
             
             transforms.append(VariationalDequantization(encoder=dequantize_flow, num_bits=num_bits))
 
