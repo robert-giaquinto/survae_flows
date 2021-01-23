@@ -6,7 +6,7 @@ from model.pool_flow import PoolFlow
 def add_model_args(parser):
 
     # Model choice
-    parser.add_argument('--compression', type=str, default='none', choices={'vae', 'max', 'slice'})
+    parser.add_argument('--compression', type=str, default='none', choices={'vae', 'max', 'slice', 'none'})
     parser.add_argument('--base_distributions', type=str, default='n',
                         help="String representing the base distribution(s). 'n'=Normal, 'u'=Uniform, 'c'=ConvNorm")
     parser.add_argument('--latent_size', type=int, default=196)
@@ -56,7 +56,10 @@ def get_model_id(args):
 
     elif args.compression == "max":
         model_id = 'Max_Pool_Flow'
-
+    elif args.compression == "slince":
+        model_id = 'Slice_Pool_Flow'
+    elif args.compression == "none":
+        model_id = 'Bijective_Flow'
     else:
         raise ValueError(f"No model defined for {args.compression} forms of dimension changes")
 
@@ -112,7 +115,7 @@ def get_model(args, data_shape, cond_shape=None):
                                  coupling_gated_conv=args.coupling_gated_conv,
                                  coupling_mixtures=args.coupling_mixtures)
             
-    elif args.compression in ["max", "slice"]:
+    elif args.compression in ["max", "slice", "none"]:
 
             # Pooling surjective flow
             model = PoolFlow(data_shape=data_shape,

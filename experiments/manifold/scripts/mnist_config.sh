@@ -6,7 +6,7 @@ dataset=mnist
 
 # training parameters
 epochs=300
-batch_size=32
+batch_size=128
 max_grad_norm=1.0
 optimizer=adamax
 warmup=5000

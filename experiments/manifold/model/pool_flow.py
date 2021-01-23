@@ -72,15 +72,28 @@ class PoolFlow(Flow):
                                         dropout=coupling_dropout))
 
             if scale < num_scales-1:
-                noise_shape = (current_shape[0] * 3,
-                               current_shape[1] // 2,
-                               current_shape[2] // 2)
-                if pooling=='slice':
+
+                if pooling == 'none':
                     transforms.append(Squeeze2d())
-                    transforms.append(Slice(StandardNormal(noise_shape), num_keep=current_shape[0], dim=1))
-                elif pooling=='max':
-                    decoder = StandardHalfNormal(noise_shape)
-                    transforms.append(SimpleMaxPoolSurjection2d(decoder=decoder))
+                    current_shape = (current_shape[0] * 4,
+                                     current_shape[1] // 2,
+                                     current_shape[2] // 2)
+
+
+                else:
+                    noise_shape = (current_shape[0] * 3,
+                                   current_shape[1] // 2,
+                                   current_shape[2] // 2)
+                
+                    if pooling == 'slice':
+                        transforms.append(Squeeze2d())
+                        transforms.append(Slice(StandardNormal(noise_shape), num_keep=current_shape[0], dim=1))
+                    elif pooling == 'max':
+                        decoder = StandardHalfNormal(noise_shape)
+                        transforms.append(SimpleMaxPoolSurjection2d(decoder=decoder))
+                    else:
+                        raise ValueError("pooling argument must be either slice, max or none")
+                
                 current_shape = (current_shape[0],
                                  current_shape[1] // 2,
                                  current_shape[2] // 2)
