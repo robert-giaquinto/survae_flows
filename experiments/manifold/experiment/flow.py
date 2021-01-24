@@ -315,7 +315,7 @@ class FlowExperiment(BaseExperiment):
             early_stop_flag = early_stop_count > self.args.early_stop
 
         if early_stop_flag:
-            print(f'Stopping training early: no improvement after {self.args.early_stop} epochs (last improvement at epoch {self.best_loss_epoch}')
+            print(f'Stopping training early: no improvement after {self.args.early_stop} epochs (last improvement at epoch {self.best_loss_epoch})')
 
         return early_stop_flag, model_improved
 
