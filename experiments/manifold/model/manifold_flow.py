@@ -25,7 +25,8 @@ class ManifoldFlow(NDPFlow):
 
         transforms = []
         current_shape = data_shape
-
+        if num_steps == 0: num_scales = 0
+        
         if dequant == 'uniform' or num_steps == 0 or num_scales == 0:
             # no bijective flows defaults to only using uniform dequantization
             transforms.append(UniformDequantization(num_bits=num_bits))
@@ -55,7 +56,6 @@ class ManifoldFlow(NDPFlow):
 
         
         # Dimension preserving flows
-        if num_steps == 0: num_scales = 0
         for scale in range(num_scales):
             for step in range(num_steps):
                 if actnorm: transforms.append(ActNormBijection2d(current_shape[0]))

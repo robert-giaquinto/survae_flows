@@ -99,7 +99,30 @@ if more_args.new_device is not None:
     
 if more_args.base_distributions is not None:
     # for now just assume we're setting base to normal normal
-    exp.model.base_dist = torch.nn.ModuleList([StandardNormal(model.flow_shape), StandardNormal((args.latent_size,))])
+    if args.compression != "vae":
+        if more_args.base_distributions == "n":
+            base_dist = StandardNormal(model.flow_shape)
+        elif more_args.base_distributions == "c":
+            base_dist = ConvNormal2d(model.flow_shape)
+        elif more_args.base_distributions == "u":
+            base_dist = StandardUniform(model.flow_shape)
+
+        exp.model.base_dist = base_dist
+    else:
+        base_dist = []
+        for i, d in enumerate(more_args.base_distributions):
+            first_of_multiple = len(more_args.bast_distributions) > 1 and i == 0
+            s = model.flow_shape if first_of_multiple else (args.latent_size,)
+                
+            if d == "n":
+                base_dist.append(StandardNormal(s))
+            elif d == "c":
+                base_dist.append(ConvNormal2d(s))
+            elif d == "u":
+                base_dist.append(StandardUniform(s))
+
+            exp.model.base_dist = torch.nn.ModuleList(base_dist)
+
     print("Changed model's base distribution:\n", exp.model)
 
 if more_args.new_lr is not None:
