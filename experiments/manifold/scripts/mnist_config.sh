@@ -12,9 +12,9 @@ optimizer=adamax
 warmup=5000
 exponential_lr=True
 annealing_schedule=25
-early_stop=15
+early_stop=25
 eval_every=5
-check_every=10
+check_every=0
 
 # VAE parameters
 trainable_sigma=True

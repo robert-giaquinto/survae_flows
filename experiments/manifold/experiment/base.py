@@ -10,8 +10,7 @@ from .utils import get_args_table, get_metric_table
 
 class BaseExperiment(object):
 
-    def __init__(self, model, optimizer, scheduler_iter, scheduler_epoch,
-                 log_path, eval_every, check_every, save_samples):
+    def __init__(self, model, optimizer, scheduler_iter, scheduler_epoch, log_path, eval_every, check_every, save_samples):
 
         # Objects
         self.model = model
@@ -53,7 +52,12 @@ class BaseExperiment(object):
         raise NotImplementedError()
 
     def stop_early(self, loss_dict, epoch):
-        return False
+        """
+        Check if model meets early stopping criteria
+        Returns: a tuple of two flags
+            [T/F the model stopped improving, T/F the model improved this iteration]
+        """
+        return False, True
         
     def log_train_metrics(self, train_dict):
         if len(self.train_metrics)==0:
@@ -152,7 +156,7 @@ class BaseExperiment(object):
                 eval_dict = self.eval_fn(epoch)
                 self.log_eval_metrics(eval_dict)
                 self.eval_epochs.append(epoch)
-                converged = self.stop_early(eval_dict, epoch)
+                converged, improved = self.stop_early(eval_dict, epoch)
             else:
                 eval_dict = None
                 converged = False
@@ -163,7 +167,7 @@ class BaseExperiment(object):
 
             # Checkpoint
             self.current_epoch += 1
-            if (epoch+1) % self.check_every == 0 or converged:
+            if (self.check_every > 0 and (epoch+1) % self.check_every == 0) or improved:
                 self.checkpoint_save()
 
             # Early stopping

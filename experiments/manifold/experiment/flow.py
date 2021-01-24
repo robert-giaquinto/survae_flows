@@ -300,7 +300,7 @@ class FlowExperiment(BaseExperiment):
 
     def stop_early(self, loss_dict, epoch):
         if self.args.early_stop == 0 or epoch < self.args.annealing_schedule:
-            return False
+            return False, True
 
         # else check if we've passed the early stopping threshold
         current_loss = loss_dict['bpd']
@@ -317,6 +317,6 @@ class FlowExperiment(BaseExperiment):
         if early_stop_flag:
             print(f'Stopping training early: no improvement after {self.args.early_stop} epochs (last improvement at epoch {self.best_loss_epoch}')
 
-        return early_stop_flag
+        return early_stop_flag, model_improved
 
 
