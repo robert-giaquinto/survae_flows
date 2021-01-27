@@ -39,6 +39,10 @@ class BaseExperiment(object):
         self.best_loss = np.inf
         self.best_loss_epoch = 0
 
+        # automatic mixed precision
+        self.amp = False
+        self.scaler = None
+
     def train_fn(self, epoch):
         raise NotImplementedError()
 
@@ -122,6 +126,7 @@ class BaseExperiment(object):
                       'eval_epochs': self.eval_epochs,
                       'model': self.model.state_dict(),
                       'optimizer': self.optimizer.state_dict(),
+                      "scaler": self.scaler.state_dict() if self.amp else None,
                       'scheduler_iter': self.scheduler_iter.state_dict() if self.scheduler_iter else None,
                       'scheduler_epoch': self.scheduler_epoch.state_dict() if self.scheduler_epoch else None}
         torch.save(checkpoint, os.path.join(self.check_path, 'checkpoint.pt'))
@@ -141,6 +146,7 @@ class BaseExperiment(object):
         self.best_loss_epoch = checkpoint['current_epoch']
         self.model.load_state_dict(checkpoint['model'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
+        if self.amp: self.scaler.load_state_dict(checkpoint['scaler'])
         if self.scheduler_iter: self.scheduler_iter.load_state_dict(checkpoint['scheduler_iter'])
         if self.scheduler_epoch: self.scheduler_epoch.load_state_dict(checkpoint['scheduler_epoch'])
 

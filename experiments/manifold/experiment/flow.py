@@ -24,7 +24,7 @@ def add_exp_args(parser):
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument('--parallel', type=str, default=None, choices={'dp'})
-    #parser.add_argument('--amp', type=eval, default=False, help="Use automatic mixed precision")
+    parser.add_argument('--amp', type=eval, default=False, help="Use automatic mixed precision")
     parser.add_argument('--resume', type=str, default=None)
 
     # Train params
@@ -122,8 +122,13 @@ class FlowExperiment(BaseExperiment):
 
         # automatic mixed precision
         # bigger changes need to make this work with dataparallel though (@autocast() decoration on each forward)
-        #self.scaler = torch.cuda.amp.GradScaler() if args.amp and args.parallel != 'dp' else None
-        self.scaler = None
+        pytorch_170 = int(str(torch.__version__)[2]) >= 7
+        self.amp = args.amp and args.parallel != 'dp' and pytorch_170
+        if self.amp:
+            # only available in pytorch 1.7.0+
+            self.scaler = torch.cuda.amp.GradScaler()
+        else:
+            self.scaler = None
 
         # save model architecture for reference
         self.save_architecture()
@@ -184,7 +189,7 @@ class FlowExperiment(BaseExperiment):
         super(FlowExperiment, self).run(epochs=self.args.epochs)
 
     def train_fn(self, epoch):
-        if self.scaler is not None:
+        if self.amp:
            # use automatic mixed precision
            return self._train_amp(epoch)
         else:
@@ -202,7 +207,6 @@ class FlowExperiment(BaseExperiment):
         loss_sum = 0.0
         loss_count = 0
         for x in self.train_loader:
-            self.optimizer.zero_grad()
 
             # Cast operations to mixed precision
             with torch.cuda.amp.autocast():
@@ -222,6 +226,8 @@ class FlowExperiment(BaseExperiment):
             
             if self.scheduler_iter:
                 self.scheduler_iter.step()
+
+            self.optimizer.zero_grad(set_to_none=True)
 
             # accumulate loss and report
             loss_sum += loss.detach().cpu().item() * len(x)

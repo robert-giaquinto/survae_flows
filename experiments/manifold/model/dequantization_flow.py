@@ -71,7 +71,11 @@ class DequantizationFlow(ConditionalInverseFlow):
         for i in range(num_steps):
             transforms.extend([Conv1x1(sample_shape[0])])
 
+            # TODO transformer currently doesn't take context correctly, problem with # of args: elementwise_params = self.coupling_net(id, context)
+            # coupling_mixtures.py", line 112
+            #coupling_network = "densenet"
             coupling_network = "conv"
+            
             if coupling_network in ["conv", "densenet"]:
                 transforms.append(
                     ConditionalCoupling(in_channels=sample_shape[0],
