@@ -14,15 +14,15 @@ class GatedConv(nn.Module):
         context_channels (int): (Optional) Number of channels in optional contextual side input.
         dropout (float): Dropout probability.
     """
-    def __init__(self, channels, context_channels=None, dropout=0.0):
+    def __init__(self, channels, context_channels=None, dropout=0.0, weight_norm=True):
         super(GatedConv, self).__init__()
         self.activation = act_module('concat_elu', allow_concat=True)
         self.sigmoid = nn.Sigmoid()
-        self.conv = Conv2d(2 * channels, channels, kernel_size=3, padding=1, weight_norm=True)
+        self.conv = Conv2d(2 * channels, channels, kernel_size=3, padding=1, weight_norm=weight_norm)
         self.drop = nn.Dropout2d(dropout)
-        self.gate = Conv2d(2 * channels, 2 * channels, kernel_size=1, padding=0, weight_norm=True)
+        self.gate = Conv2d(2 * channels, 2 * channels, kernel_size=1, padding=0, weight_norm=weight_norm)
         if context_channels is not None:
-            self.context_conv = Conv2d(2 * context_channels, channels, kernel_size=1, padding=0, weight_norm=True)
+            self.context_conv = Conv2d(2 * context_channels, channels, kernel_size=1, padding=0, weight_norm=weight_norm)
         else:
             self.context_conv = None
 
@@ -41,9 +41,7 @@ class GatedConv(nn.Module):
 
 
 class Conv2d(nn.Module):
-    def __init__(self, in_channels, out_channels,
-                 kernel_size=(3, 3), stride=(1, 1),
-                 padding="same", weight_std=0.05, weight_norm=True):
+    def __init__(self, in_channels, out_channels, kernel_size=(3, 3), stride=(1, 1), padding="same", weight_std=0.05, weight_norm=True):
         super().__init__()
 
         if padding == "same":
@@ -56,9 +54,6 @@ class Conv2d(nn.Module):
         else:
             self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=True)
 
-        # init weight with std
-        #self.conv.weight.data.normal_(mean=0.0, std=weight_std)
-        #self.conv.bias.data.zero_()
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight)
@@ -91,6 +86,60 @@ class Conv2dZeros(nn.Module):
         output = self.conv(sample)
         return output * torch.exp(self.logs * self.logscale_factor)
 
+
+class GatedConv2d(nn.Module):
+    """
+    Simple gated convolution layer
+    """
+    def __init__(self, in_channels, out_channels, kernel_size=(3, 3), stride=(1, 1), padding="same", activation=None, weight_norm=True):
+        super(GatedConv2d, self).__init__()
+        
+        self.activation = activation
+        self.conv = Conv2d(in_channels, out_channels*2, kernel_size=kernel_size, padding=padding, stride=stride, weight_norm=weight_norm)
+        
+    def forward(self, x):
+        x = self.conv(x)
+        if self.activation:
+            x = self.activation(x)
+
+        h, g = x.chunk(2, dim=1)
+        hg = h * torch.sigmoid(g)
+        return hg
+
+
+class GatedConvTranspose2d(nn.Module):
+    """
+    Simple gated de-convolution layer
+    """
+
+    def __init__(self, in_channels, out_channels, kernel_size=(3, 3), stride=(1, 1), padding="same", out_padding=0, activation=None, weight_norm=True):
+        super(GatedConvTranspose2d, self).__init__()
+
+        if padding == "same":
+            padding = compute_same_pad(kernel_size, stride)
+        elif padding == "valid":
+            padding = 0
+
+        self.activation = activation
+        if weight_norm:
+            self.conv = nn.utils.weight_norm(
+                nn.ConvTranspose2d(in_channels, out_channels * 2, kernel_size, stride, padding, out_padding, dilation=1))
+        else:
+            self.conv = nn.ConvTranspose2d(in_channels, out_channels * 2, kernel_size, stride, padding, out_padding, dilation=1)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight)
+
+    def forward(self, x):
+        x = self.conv(x)
+        if self.activation:
+            x = self.activation(x)
+
+        h, g = x.chunk(2, dim=1)
+        hg = h * torch.sigmoid(g)
+        return hg
+    
 
 def compute_same_pad(kernel_size, stride):
     if isinstance(kernel_size, int):

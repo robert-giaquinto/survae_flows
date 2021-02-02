@@ -20,7 +20,6 @@ class NDPFlow(Distribution):
     the base_dist[0] matches the size of the output from the bijective flows,
     and can be set to None of the 
     Next, base_dist[1] matches the shape of the change in dimension flows, etc.
-    
     """
 
     def __init__(self, base_dist, transforms):
@@ -45,6 +44,10 @@ class NDPFlow(Distribution):
                    Beta can be annealed from 0 to 1 over the first few epochs, however this is
                    only applicable when the bijective portion of the flow is regularized to
                    have a Gaussian output.
+
+        TODO pass transforms as a list of lists, where the length corresponds to each base_dist
+             the sublists include all transforms for a particular bijective piece of the flow with
+             the change of dimenion flow being the final element.
         """
         log_prob = torch.zeros(x.shape[0], device=x.device)
 
@@ -52,6 +55,7 @@ class NDPFlow(Distribution):
         for transform in self.transforms[:-1]:
             x, ldj = transform(x)
             log_prob += ldj
+        
         # can impose pre-ndp transformation to be distributed like base_dist[0]
         if self.base_dist[0] is not None:
             log_prob += self.base_dist[0].log_prob(x)
@@ -67,11 +71,8 @@ class NDPFlow(Distribution):
         return log_prob
 
     def sample(self, num_samples):
-        # map low dimensional noise to higher dimensions
-        z = self.base_dist[-1].sample(num_samples)
-        x = self.transforms[-1].inverse(z)
-        #x = self.base_dist[0].sample(num_samples)
-        for transform in reversed(self.transforms[:-1]):
+        x = self.base_dist[-1].sample(num_samples)
+        for transform in reversed(self.transforms):
             x = transform.inverse(x)
 
         return x

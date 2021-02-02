@@ -23,7 +23,7 @@ class VAE(StochasticTransform):
         self.decoder = decoder
 
     def forward(self, x):
-        z, log_qz = self.encoder.sample_with_log_prob(context=x)
+        z, log_qz = self.encoder.sample_with_log_prob(context=x)        
         log_px = self.decoder.log_prob(x, context=z)
         return z, log_px - log_qz
 

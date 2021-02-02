@@ -7,6 +7,9 @@ from survae.nn.layers import act_module
 
 class MLP(nn.Sequential):
     def __init__(self, input_size, output_size, hidden_units, activation='relu', in_lambda=None, out_lambda=None):
+        if isinstance(hidden_units, list) == False:
+            hidden_units = [hidden_units]
+        
         layers = []
         if in_lambda: layers.append(LambdaLayer(in_lambda))
 
