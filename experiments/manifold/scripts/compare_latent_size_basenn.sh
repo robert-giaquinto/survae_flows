@@ -23,10 +23,10 @@ linear=False
 stochastic_elbo=True
 
 
-printf "\nFor compression=${vae}, vae_activation=${vae_activation}, linear=${linear}, coupling=${coupling_network} (${base_distributions}), and varying latent_sz\n"
+printf "\nFor compression=${compression}, vae_activation=${vae_activation}, linear=${linear}, coupling=${coupling_network} (${base_distributions}), and varying latent_sz\n"
 
 
-for latent_sz in 784 #98 196 392 588 784
+for latent_sz in 98 #196 392 588 784
 do
     
     for seed in 101 #102 103
@@ -53,7 +53,6 @@ do
                --annealing_schedule ${annealing_schedule} \
                --early_stop         ${early_stop} \
                --eval_every         ${eval_every} \
-               --check_every        ${check_every} \
                \
                --latent_size        ${latent_sz} \
                --vae_activation     ${vae_activation} \

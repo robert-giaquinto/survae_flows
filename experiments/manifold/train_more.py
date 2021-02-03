@@ -53,6 +53,11 @@ args.start_model = more_args.model
 args.new_epochs = more_args.new_epochs
 args.new_lr = more_args.new_lr if more_args.new_lr is not None else args.lr
 if more_args.new_device is not None: args.device = more_args.new_device
+if more_args.base_distributions is not None: args.base_distributions = more_args.base_distributions
+if hasattr(args, 'amp') == False:
+    args.amp = False
+    args.scaler = None
+
 
 ##################
 ## Specify data ##
@@ -90,6 +95,7 @@ exp = FlowExperiment(args=args,
                      scheduler_iter=None,
                      scheduler_epoch=None)
 
+
 # Load checkpoint
 exp.checkpoint_load('{}/check/'.format(more_args.model), device=more_args.new_device)
 
@@ -111,7 +117,7 @@ if more_args.base_distributions is not None:
     else:
         base_dist = []
         for i, d in enumerate(more_args.base_distributions):
-            first_of_multiple = len(more_args.bast_distributions) > 1 and i == 0
+            first_of_multiple = len(more_args.base_distributions) > 1 and i == 0
             s = model.flow_shape if first_of_multiple else (args.latent_size,)
                 
             if d == "n":

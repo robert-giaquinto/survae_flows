@@ -68,8 +68,6 @@ if eval_args.double: model = model.double()
 
 samples = model.sample(eval_args.samples).cpu().float() / (2**args.num_bits - 1)
 vutils.save_image(samples, path_samples, nrow=eval_args.nrow)
-#samples = torch.clamp(model.sample(eval_args.samples), max=1).cpu()
-#vutils.save_image(samples.float(), path_samples, nrow=eval_args.nrow)
 
 # save real images too
 path_true_samples = '{}/samples/true_ep{}_s{}.png'.format(eval_args.model, checkpoint['current_epoch'], eval_args.seed)

@@ -45,7 +45,7 @@ class NDPFlow(Distribution):
                    only applicable when the bijective portion of the flow is regularized to
                    have a Gaussian output.
 
-        TODO pass transforms as a list of lists, where the length corresponds to each base_dist
+        TODO: pass transforms as a list of lists, where the length corresponds to each base_dist
              the sublists include all transforms for a particular bijective piece of the flow with
              the change of dimenion flow being the final element.
         """
@@ -57,7 +57,7 @@ class NDPFlow(Distribution):
             log_prob += ldj
         
         # can impose pre-ndp transformation to be distributed like base_dist[0]
-        if self.base_dist[0] is not None:
+        if self.base_dist[0] is not None and self.training:
             log_prob += self.base_dist[0].log_prob(x)
         else:
             # using a single base distribution
