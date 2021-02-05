@@ -27,6 +27,7 @@ parser.add_argument('--model', type=str, default=None)
 parser.add_argument('--new_epochs', type=int, default=None)
 parser.add_argument('--new_lr', type=float, default=None)
 parser.add_argument('--new_device', type=str, default=None)
+parser.add_argument('--new_batch_size', type=int, default=None)
 parser.add_argument('--freeze', type=eval, default=True)
 # VAE Compression parameters
 parser.add_argument('--latent_size', type=int, default=196)
@@ -64,6 +65,7 @@ args.save_samples = more_args.save_samples
 args.log_tb = more_args.log_tb
 args.log_wandb = more_args.log_wandb
 if more_args.new_lr is not None: args.lr = more_args.new_lr
+if more_args.new_batch_size is not None: args.batch_size = more_args.new_batch_size
 
 # Store more_args
 args.start_model = more_args.model

@@ -29,6 +29,7 @@ parser.add_argument('--model', type=str, default=None)
 parser.add_argument('--new_epochs', type=int)
 parser.add_argument('--new_lr', type=float, default=None)
 parser.add_argument('--new_device', type=str, default=None)
+parser.add_argument('--new_batch_size', type=int, default=None)
 parser.add_argument('--base_distributions', type=str, default=None)
 more_args = parser.parse_args()
 
@@ -47,6 +48,7 @@ args.name = time.strftime("%Y-%m-%d_%H-%M-%S")
 args.epochs = more_args.new_epochs
 args.resume = None
 if more_args.new_lr is not None: args.lr = more_args.new_lr
+if more_args.new_batch_size is not None: args.batch_size = more_args.new_batch_size
 
 # Store more_args
 args.start_model = more_args.model
