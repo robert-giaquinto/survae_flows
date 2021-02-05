@@ -104,23 +104,6 @@ class ManifoldFlow(NDPFlow):
 
         # Non-dimension preserving flows
         flat_dim = current_shape[0] * current_shape[1] * current_shape[2]
-        # conv_vae = True
-        # if conv_vae:
-        #     encoder = ConditionalNormal(
-        #         GatedConv2dNet(in_channels=current_shape[0],
-        #                     out_channels=2 * latent_size,
-        #                     hidden_channels=64,
-        #                     activation="none",
-        #                     out_lambda=lambda x: x.view(x.shape[0], flat_dim)))
-        #     decoder = ConditionalNormal(
-        #         GatedConvTranspose2dNet(in_channels=latent_size,
-        #                              out_channels=2 * flat_dim    or current_shape[0],
-        #                              hidden_channels=64,
-        #                              activation="none",
-        #                              in_lambda=lambda x: x.view(x.shape[0], latent_size, 1, 1)),
-        #         split_dim=1)
-            
-        # else:
         encoder = ConditionalNormal(MLP(flat_dim, 2 * latent_size,
                                         hidden_units=vae_hidden_units,
                                         activation=vae_activation,

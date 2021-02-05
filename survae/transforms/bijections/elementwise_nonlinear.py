@@ -57,7 +57,7 @@ class SneakyReLU(Bijection):
 class Tanh(Bijection):
     def forward(self, x):
         z = torch.tanh(x)
-        ldj = torch.log(1 - z ** 2)
+        ldj = torch.log(1 - z ** 2 + 1e-30)
         ldj = sum_except_batch(ldj)
         return z, ldj
 

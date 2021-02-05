@@ -15,11 +15,11 @@ from .base import BaseExperiment
 
 # Logging frameworks
 from torch.utils.tensorboard import SummaryWriter
-#import wandb
+import wandb
 
 
 def add_exp_args(parser):
-
+    
     # Experiment settings
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--device', type=str, default='cuda')

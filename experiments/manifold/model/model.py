@@ -1,7 +1,12 @@
+import torch
+import os
+
 from model.linear_manifold_flow import LinearManifoldFlow
 from model.manifold_flow import ManifoldFlow
 from model.multilevel_flow import MultilevelFlow
 from model.pool_flow import PoolFlow
+from model.pretrained_flow import PretrainedFlow
+from model.compress_pretrained import CompressPretrained
 
 
 def add_model_args(parser):
@@ -40,11 +45,16 @@ def add_model_args(parser):
     parser.add_argument('--coupling_gated_conv', type=eval, default=True)
     parser.add_argument('--coupling_mixtures', type=int, default=16)
 
+    # Extending a pretrained model
+    parser.add_argument('--pretrained', type=eval, default=False)
+    
 
 def get_model_id(args):
-    # Todo: include other key model parameters as part of id
+    if args.pretrained:
+        model_id = f"Compress_Pretrained_{args.project}_{args.name}"
+        return model_id
+    
     arch = f"scales{args.num_scales}_steps{args.num_steps}_{args.coupling_network}"
-
     if args.compression == "vae":
     
         if args.linear:
@@ -67,13 +77,53 @@ def get_model_id(args):
     else:
         raise ValueError(f"No model defined for {args.compression} forms of dimension changes")
 
-
     return model_id + "_" + arch
 
 
 def get_model(args, data_shape, cond_shape=None):
+
+    if args.pretrained:
+        pretrained_model = PretrainedFlow(data_shape=data_shape,
+                                          num_bits=args.num_bits,
+                                          num_scales=args.num_scales,
+                                          num_steps=args.num_steps,
+                                          actnorm=args.actnorm,
+                                          pooling=args.pooling,
+                                          dequant=args.dequant,
+                                          dequant_steps=args.dequant_steps,
+                                          dequant_context=args.dequant_context,
+                                          densenet_blocks=args.densenet_blocks,
+                                          densenet_channels=args.densenet_channels,
+                                          densenet_depth=args.densenet_depth,
+                                          densenet_growth=args.densenet_growth,
+                                          dropout=args.dropout,
+                                          gated_conv=args.gated_conv)
+        
+        # Load checkpoint
+        #exp.checkpoint_load('{}/check/'.format(more_args.model), device=more_args.new_device)
+        check_path = f'{args.start_model}/check/'
+        if args.new_device is not None:
+            checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'), map_location=torch.device(args.new_device))
+        else:
+            checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'))
+
+        pretrained_model.load_state_dict(checkpoint['model'])
+
+        if args.freeze:
+            # freeze the pretrained model's layers
+            for param in pretrained_model.parameters():
+                param.requires_grad = False
+                
+        # modify model
+        if args.new_device is not None:
+            pretrained_model.to(torch.device(args.new_device))
+        
+        model = CompressPretrained(pretrained_model=pretrained_model,
+                                   vae_hidden_units=args.vae_hidden_units,
+                                   latent_size=args.latent_size,
+                                   vae_activation=args.vae_activation)
     
-    if args.compression == "vae":
+    elif args.compression == "vae":
         
         if args.linear:
             model = LinearManifoldFlow(data_shape=data_shape,

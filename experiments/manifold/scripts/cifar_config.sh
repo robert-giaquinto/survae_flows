@@ -3,6 +3,7 @@
 #
 device=cuda
 dataset=cifar10
+augmentation=eta
 
 # training parameters
 epochs=300
