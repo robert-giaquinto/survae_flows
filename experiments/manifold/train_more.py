@@ -30,7 +30,9 @@ parser.add_argument('--new_epochs', type=int)
 parser.add_argument('--new_lr', type=float, default=None)
 parser.add_argument('--new_device', type=str, default=None)
 parser.add_argument('--new_batch_size', type=int, default=None)
+parser.add_arguemnt('--new_augmentation', type=str, default=None)
 parser.add_argument('--base_distributions', type=str, default=None)
+add_data_args(parser)
 more_args = parser.parse_args()
 
 path_args = '{}/args.pickle'.format(more_args.model)
@@ -46,6 +48,7 @@ with open(path_args, 'rb') as f:
 # Adjust args
 args.name = time.strftime("%Y-%m-%d_%H-%M-%S")
 args.epochs = more_args.new_epochs
+if more_args.new_augmentation is not None: args.augmentation = more_args.new_augmentation
 args.resume = None
 if more_args.new_lr is not None: args.lr = more_args.new_lr
 if more_args.new_batch_size is not None: args.batch_size = more_args.new_batch_size
@@ -54,6 +57,7 @@ if more_args.new_batch_size is not None: args.batch_size = more_args.new_batch_s
 args.start_model = more_args.model
 args.new_epochs = more_args.new_epochs
 args.new_lr = more_args.new_lr if more_args.new_lr is not None else args.lr
+args.new_augmentation = more_args.new_augmentation
 if more_args.new_device is not None: args.device = more_args.new_device
 if more_args.base_distributions is not None: args.base_distributions = more_args.base_distributions
 if hasattr(args, 'amp') == False:

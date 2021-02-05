@@ -53,6 +53,11 @@ args.epochs = more_args.new_epochs
 args.resume = None
 args.pretrained = True
 args.exponential_lr = True
+if hasattr(args, 'amp') == False:
+    args.amp = False
+    args.scaler = None
+
+# Add new args that didn't exist in pretrained model and update with new values
 args.annealing_schedule = more_args.annealing_schedule
 args.freeze = more_args.freeze
 args.latent_size = more_args.latent_size
@@ -66,16 +71,13 @@ args.log_tb = more_args.log_tb
 args.log_wandb = more_args.log_wandb
 if more_args.new_lr is not None: args.lr = more_args.new_lr
 if more_args.new_batch_size is not None: args.batch_size = more_args.new_batch_size
+if more_args.new_device is not None: args.device = more_args.new_device
 
 # Store more_args
 args.start_model = more_args.model
 args.new_epochs = more_args.new_epochs
 args.new_device = more_args.new_device
 args.new_lr = more_args.new_lr if more_args.new_lr is not None else args.lr
-if more_args.new_device is not None: args.device = more_args.new_device
-if hasattr(args, 'amp') == False:
-    args.amp = False
-    args.scaler = None
 
 
 ##################
