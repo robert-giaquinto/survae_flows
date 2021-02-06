@@ -6,8 +6,8 @@ dataset=cifar10
 augmentation=eta
 
 # training parameters
-epochs=300
-batch_size=256
+epochs=500
+batch_size=64
 max_grad_norm=1.0
 optimizer=adamax
 warmup=5000
@@ -23,8 +23,8 @@ vae_hidden_units="512 256"
 
 # variational dequantization
 dequant=flow
-dequant_steps=2
-dequant_context=8
+dequant_steps=4
+dequant_context=32
 
 # model architecture
 num_scales=3

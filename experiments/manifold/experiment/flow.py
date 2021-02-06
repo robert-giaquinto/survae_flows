@@ -318,7 +318,7 @@ class FlowExperiment(BaseExperiment):
         else:
             # model didn't improve, do we consider it converged yet?
             early_stop_count = (epoch - self.best_loss_epoch)  
-            early_stop_flag = early_stop_count > self.args.early_stop
+            early_stop_flag = early_stop_count >= self.args.early_stop
 
         if early_stop_flag:
             print(f'Stopping training early: no improvement after {self.args.early_stop} epochs (last improvement at epoch {self.best_loss_epoch})')
