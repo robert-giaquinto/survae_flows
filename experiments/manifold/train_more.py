@@ -32,7 +32,7 @@ parser.add_argument('--new_device', type=str, default=None)
 parser.add_argument('--new_batch_size', type=int, default=None)
 parser.add_argument('--new_augmentation', type=str, default=None)
 parser.add_argument('--base_distributions', type=str, default=None)
-parser.add_argument('--freeze', type=eval default=None, help="True to keep layers of a pretrained model frozen, False to fine-tune")
+parser.add_argument('--freeze', type=eval, default=None, help="True to keep layers of a pretrained model frozen, False to fine-tune")
 add_data_args(parser)
 more_args = parser.parse_args()
 
