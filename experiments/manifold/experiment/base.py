@@ -102,7 +102,8 @@ class BaseExperiment(object):
     def save_architecture(self):
         with open(os.path.join(self.log_path, 'architecture.txt'), "w") as f:
             f.write(str(self.model))
-            f.write(f"\nNumber of model parameters: {count_parameters(self.model)}\n")
+            f.write(f"\nNumber of trainable model parameters: {count_parameters(self.model)}\n")
+            f.write(f"\nTotal number of model parameters: {sum(p.numel() for p in self.model.parameters())}\n")
 
     def save_metrics(self):
         # Save metrics

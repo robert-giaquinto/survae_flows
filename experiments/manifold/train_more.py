@@ -32,6 +32,7 @@ parser.add_argument('--new_device', type=str, default=None)
 parser.add_argument('--new_batch_size', type=int, default=None)
 parser.add_argument('--new_augmentation', type=str, default=None)
 parser.add_argument('--base_distributions', type=str, default=None)
+parser.add_argument('--freeze', type=eval default=None, help="True to keep layers of a pretrained model frozen, False to fine-tune")
 add_data_args(parser)
 more_args = parser.parse_args()
 
@@ -49,6 +50,7 @@ with open(path_args, 'rb') as f:
 args.name = time.strftime("%Y-%m-%d_%H-%M-%S")
 args.epochs = more_args.new_epochs
 if more_args.new_augmentation is not None: args.augmentation = more_args.new_augmentation
+if more_args.freeze is not None: args.freeze = more_args.freeze
 args.resume = None
 args.pretrained = False
 if more_args.new_lr is not None: args.lr = more_args.new_lr

@@ -64,7 +64,7 @@ class LinearVAE(StochasticTransform):
         eps = FloatTensor(z_mean.size()).normal_()
         z = eps.mul(z_std).add_(z_mean)
 
-        if self.stochastic_elbo:
+        if self.stochastic_elbo or self.training == False:
             x_recon = torch.matmul(z, self.dec_weight)
             lhood = self.stochastic_lhood(x, x_recon)
         else:
@@ -144,10 +144,12 @@ class LinearVAE(StochasticTransform):
 
         Returns: Mean_i(log p(x_i|z_i))
         """
-        input_dim = x.size(1)
+        #input_dim = x.size(1)
+        d = self.input_dim
+        assert d == x.size(1)
         sigma_sq = torch.exp(self.log_sigma)
         log_inner = -0.5 * torch.sum((x - logits)**2 / sigma_sq, 1)
-        log_base = -0.5 * (math.log(2 * math.pi) + self.log_sigma) * input_dim
+        log_base = -0.5 * d * (math.log(2 * math.pi) + self.log_sigma)
         rval = sum_except_batch(log_base + log_inner)
         return rval
 

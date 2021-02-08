@@ -23,8 +23,8 @@ vae_hidden_units="512 256"
 
 # variational dequantization
 dequant=flow
-dequant_steps=4
-dequant_context=32
+dequant_steps=2
+dequant_context=8
 
 # model architecture
 num_scales=3
