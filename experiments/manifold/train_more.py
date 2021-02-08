@@ -54,6 +54,7 @@ if more_args.new_augmentation is not None: args.augmentation = more_args.new_aug
 if more_args.freeze is not None: args.freeze = more_args.freeze
 args.resume = None
 args.pretrained = more_args.pretrained
+args.fine_tune_pretrained = True
 if more_args.new_lr is not None: args.lr = more_args.new_lr
 if more_args.new_batch_size is not None: args.batch_size = more_args.new_batch_size
 

@@ -47,6 +47,7 @@ def add_model_args(parser):
 
     # Extending a pretrained model
     parser.add_argument('--pretrained', type=eval, default=False)
+    parser.add_argument('--fine_tune_pretrained', type=eval, default=False)
     
 
 def get_model_id(args):
@@ -98,25 +99,28 @@ def get_model(args, data_shape, cond_shape=None):
                                           densenet_growth=args.densenet_growth,
                                           dropout=args.dropout,
                                           gated_conv=args.gated_conv)
+
         
-        # Load checkpoint
-        #exp.checkpoint_load('{}/check/'.format(more_args.model), device=more_args.new_device)
-        check_path = f'{args.start_model}/check/'
-        if args.new_device is not None:
-            checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'), map_location=torch.device(args.new_device))
-        else:
-            checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'))
+        if not args.fine_tune_pretrained:
+            # Not fine tuning the model, load the original flow's weights and biases from file
+            
+            # Load checkpoint
+            check_path = f'{args.start_model}/check/'
+            if args.new_device is not None:
+                checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'), map_location=torch.device(args.new_device))
+            else:
+                checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'))
 
-        pretrained_model.load_state_dict(checkpoint['model'])
+            pretrained_model.load_state_dict(checkpoint['model'])
 
-        if args.freeze:
-            # freeze the pretrained model's layers
-            for param in pretrained_model.parameters():
-                param.requires_grad = False
+            if args.freeze:
+                # freeze the pretrained model's layers
+                for param in pretrained_model.parameters():
+                    param.requires_grad = False
                 
-        # modify model
-        if args.new_device is not None:
-            pretrained_model.to(torch.device(args.new_device))
+            # modify model
+            if args.new_device is not None:
+                pretrained_model.to(torch.device(args.new_device))
         
         model = CompressPretrained(pretrained_model=pretrained_model,
                                    vae_hidden_units=args.vae_hidden_units,
