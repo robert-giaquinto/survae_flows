@@ -19,15 +19,15 @@ base_distributions="n"
 # Fixed parameters for this experiment
 compression=vae
 vae_activation=none
-linear=False
+linear=True
 stochastic_elbo=True
 vae_hidden_units=""
 
 
-printf "\nFor compression=${vae} (hidden={vae_hidden_units}), vae_activation=${vae_activation}, linear=${linear}, coupling=${coupling_network} (${base_distributions}), and varying latent_sz\n"
+printf "\nFor compression=${compression} (hidden=${vae_hidden_units}), vae_activation=${vae_activation}, linear=${linear}, coupling=${coupling_network} (base=${base_distributions}), and varying latent_sz\n"
 
 
-for latent_sz in 49 98 196 392 784
+for latent_sz in 24 49 98 196 392 784
 do
     
     for seed in 101 #102 103
@@ -54,7 +54,6 @@ do
                --annealing_schedule ${annealing_schedule} \
                --early_stop         ${early_stop} \
                --eval_every         ${eval_every} \
-               --check_every        ${check_every} \
                \
                --latent_size        ${latent_sz} \
                --vae_activation     ${vae_activation} \

@@ -3,7 +3,6 @@ import torch.nn as nn
 import math
 
 from torch.distributions import Normal
-
 from survae.transforms.stochastic import StochasticTransform
 from survae.utils import sum_except_batch
 
@@ -60,18 +59,17 @@ class LinearVAE(StochasticTransform):
         # Project x to z
         z_mean = torch.matmul(x - self.mu, self.enc_weight)
         z_std = torch.exp(0.5 * self.z_logvar.unsqueeze(0)).repeat(x.size(0), 1)
-        FloatTensor = torch.cuda.FloatTensor if x.is_cuda else torch.FloatTensor
-        eps = FloatTensor(z_mean.size()).normal_()
-        z = eps.mul(z_std).add_(z_mean)
+        dist = Normal(loc=z_mean, scale=z_std)
+        z = dist.rsample()
+        log_qz = sum_except_batch(dist.log_prob(z))
 
         if self.stochastic_elbo or self.training == False:
             x_recon = torch.matmul(z, self.dec_weight)
-            lhood = self.stochastic_lhood(x, x_recon)
+            log_px = self.stochastic_lhood(x, x_recon)
         else:
-            lhood = self.analytic_lhood(x)
+            log_px = self.analytic_lhood(x)
 
-        #kl = self.gaussian_kl_divergence(z_mean, self.z_logvar, p_mean=0.0, p_logvar=math.log(1.0))
-        #elbo = lhood - kl
+        lhood = log_px - log_qz
         return z, lhood
 
     def inverse(self, z):
@@ -83,28 +81,6 @@ class LinearVAE(StochasticTransform):
         decoder =  Normal(loc=x_mean, scale=x_sigma)
         x_recon = decoder.rsample().view((z.size(0), self.input_shape[1], self.input_shape[2], self.input_shape[3]))
         return x_recon
-
-    def gaussian_kl_divergence(self, q_mean, q_logvar, p_mean, p_logvar):
-        """
-        KL Divergence between two Gaussian distributions.
-
-        Given q ~ N(mu_1, sigma^2_1) and p ~ N(mu_2, sigma^2_2), this function
-        returns,
-
-        KL(q||p) = log (sigma^2_2 / sigma^2_1) +
-        (sigma^2_1 + (mu_1 - mu_2)^2) / (2 sigma^2_2) - 0.5
-
-        Args:
-        q_mean: Mean of proposal distribution.
-        q_logvar: Log-variance of proposal distribution.
-        p_mean: Mean of prior distribution.
-        p_logvar: Log-variance of prior distribution
-
-        Returns: The KL divergence between q and p ( KL(q||p) ).
-        """
-        rval = (p_logvar - q_logvar) + \
-            0.5 * ((torch.exp(q_logvar) + (q_mean - p_mean)**2) / math.exp(p_logvar) - 1.0)
-        return sum_except_batch(rval)
 
     def analytic_lhood(self, x):
         """
