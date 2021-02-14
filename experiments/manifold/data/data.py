@@ -53,7 +53,7 @@ def get_data(args):
 
 def get_augmentation(augmentation, dataset, data_shape):
     c, h, w = data_shape
-    if augmentation is None:
+    if augmentation is None or augmentation == "none":
         pil_transforms = []
     elif augmentation == 'horizontal_flip':
         pil_transforms = [RandomHorizontalFlip(p=0.5)]
