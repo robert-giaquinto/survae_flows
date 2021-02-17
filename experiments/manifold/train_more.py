@@ -52,6 +52,7 @@ args.name = time.strftime("%Y-%m-%d_%H-%M-%S")
 args.epochs = more_args.new_epochs
 if more_args.new_augmentation is not None: args.augmentation = more_args.new_augmentation
 if more_args.freeze is not None: args.freeze = more_args.freeze
+args.early_stop = 0
 args.resume = None
 args.pretrained = more_args.pretrained
 args.fine_tune_pretrained = True
