@@ -6,8 +6,8 @@ dataset=imagenet32
 augmentation=none
 
 # training parameters
-epochs=50
-batch_size=32
+epochs=25
+batch_size=64
 max_grad_norm=1.0
 optimizer=adamax
 warmup=5000
