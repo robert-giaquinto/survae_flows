@@ -104,6 +104,8 @@ class BaseExperiment(object):
             f.write(str(self.model))
             f.write(f"\nNumber of trainable model parameters: {count_parameters(self.model)}\n")
             f.write(f"\nTotal number of model parameters: {sum(p.numel() for p in self.model.parameters())}\n")
+            if hasattr(self.model, 'flow_shape'):
+                f.write(f"\nOutput latent space shape: {self.model.flow_shape}\n")
 
     def save_metrics(self):
         # Save metrics
