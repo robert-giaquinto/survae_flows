@@ -52,6 +52,7 @@ args.name = time.strftime("%Y-%m-%d_%H-%M-%S")
 args.epochs = more_args.new_epochs
 args.resume = None
 args.pretrained = True
+args.fine_tune_pretrained = False  # learn VAE first, then fine tune full model
 args.exponential_lr = True
 if hasattr(args, 'amp') == False:
     args.amp = False
