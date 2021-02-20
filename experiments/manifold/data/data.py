@@ -46,7 +46,7 @@ def get_data(args):
 
 
     # Data Loader
-    train_loader, test_loader = dataset.get_data_loaders(args.batch_size)
+    train_loader, test_loader = dataset.get_data_loaders(batch_size=args.batch_size, pin_memory=args.pin_memory, num_workers=args.num_workers)
 
     return train_loader, test_loader, data_shape
 
