@@ -29,11 +29,9 @@ parser.add_argument('--model', type=str, default=None)
 parser.add_argument('--new_epochs', type=int)
 parser.add_argument('--new_lr', type=float, default=None)
 parser.add_argument('--new_device', type=str, default=None)
+parser.add_argument('--new_num_workers', type=int, default=None)
 parser.add_argument('--new_batch_size', type=int, default=None)
-parser.add_argument('--new_augmentation', type=str, default=None)
-parser.add_argument('--base_distributions', type=str, default=None)
-parser.add_argument('--freeze', type=eval, default=None, help="True to keep layers of a pretrained model frozen, False to fine-tune")
-parser.add_argument('--pretrained', type=eval, default=False, help="included for backwards compatibability, remove later")
+parser.add_argument('--new_early_stop', type=int, default=None)
 add_data_args(parser)
 more_args = parser.parse_args()
 
@@ -49,26 +47,18 @@ with open(path_args, 'rb') as f:
 
 # Adjust args
 args.name = time.strftime("%Y-%m-%d_%H-%M-%S")
-args.epochs = more_args.new_epochs
-if more_args.new_augmentation is not None: args.augmentation = more_args.new_augmentation
-if more_args.freeze is not None: args.freeze = more_args.freeze
-args.early_stop = 0
 args.resume = None
-args.pretrained = more_args.pretrained
-args.fine_tune_pretrained = True
+args.epochs = more_args.new_epochs
 if more_args.new_lr is not None: args.lr = more_args.new_lr
 if more_args.new_batch_size is not None: args.batch_size = more_args.new_batch_size
+if more_args.new_early_stop is not None: args.early_stop = more_args.new_early_stop
+if more_args.new_device is not None: args.device = more_args.new_device
+if more_args.new_num_workers is not None: args.num_workers = more_args.new_num_workers
 
 # Store more_args
 args.start_model = more_args.model
 args.new_epochs = more_args.new_epochs
 args.new_lr = more_args.new_lr if more_args.new_lr is not None else args.lr
-args.new_augmentation = more_args.new_augmentation
-if more_args.new_device is not None: args.device = more_args.new_device
-if more_args.base_distributions is not None: args.base_distributions = more_args.base_distributions
-if hasattr(args, 'amp') == False:
-    args.amp = False
-    args.scaler = None
 
 
 ##################
@@ -90,7 +80,7 @@ model_id = get_model_id(args)
 #######################
 
 optimizer, _, _ = get_optim(args, model)
-optim_id = 'more'
+optim_id = f"more_{get_optim_id(args)}"
 
 ##############
 ## Training ##
@@ -114,34 +104,6 @@ exp.checkpoint_load('{}/check/'.format(more_args.model), device=more_args.new_de
 # modify model
 if more_args.new_device is not None:
     exp.model.to(torch.device(more_args.new_device))
-    
-if more_args.base_distributions is not None:
-    # for now just assume we're setting base to normal normal
-    if args.compression != "vae":
-        if more_args.base_distributions == "n":
-            base_dist = StandardNormal(model.flow_shape)
-        elif more_args.base_distributions == "c":
-            base_dist = ConvNormal2d(model.flow_shape)
-        elif more_args.base_distributions == "u":
-            base_dist = StandardUniform(model.flow_shape)
-
-        exp.model.base_dist = base_dist
-    else:
-        base_dist = []
-        for i, d in enumerate(more_args.base_distributions):
-            first_of_multiple = len(more_args.base_distributions) > 1 and i == 0
-            s = model.flow_shape if first_of_multiple else (args.latent_size,)
-                
-            if d == "n":
-                base_dist.append(StandardNormal(s))
-            elif d == "c":
-                base_dist.append(ConvNormal2d(s))
-            elif d == "u":
-                base_dist.append(StandardUniform(s))
-
-            exp.model.base_dist = torch.nn.ModuleList(base_dist)
-
-    print("Changed model's base distribution:\n", exp.model)
 
 if more_args.new_lr is not None:
     # Adjust lr

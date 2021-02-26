@@ -12,7 +12,7 @@ from model.compress_pretrained import CompressPretrained
 def add_model_args(parser):
 
     # Model choice
-    parser.add_argument('--compression', type=str, default='none', choices={'vae', 'mvae', 'max', 'slice', 'none'})
+    parser.add_argument('--compression', type=str, default='none', choices={'vae', 'mvae', 'max', 'slice', 'none', 'pretrained'})
     parser.add_argument('--base_distributions', type=str, default='n',
                         help="String representing the base distribution(s). 'n'=Normal, 'u'=Uniform, 'c'=ConvNorm")
     parser.add_argument('--latent_size', type=int, default=196)
@@ -44,46 +44,43 @@ def add_model_args(parser):
     parser.add_argument('--coupling_dropout', type=float, default=0.2)
     parser.add_argument('--coupling_gated_conv', type=eval, default=True)
     parser.add_argument('--coupling_mixtures', type=int, default=16)
-
-    # Extending a pretrained model
-    parser.add_argument('--pretrained', type=eval, default=False)
-    parser.add_argument('--fine_tune_pretrained', type=eval, default=False)
     
 
 def get_model_id(args):
-    if args.pretrained:
+    if args.compression == 'pretrained':
         model_id = f"Compress_Pretrained_{args.project}_nonpool_VAE_{'_'.join([str(elt) for elt in args.vae_hidden_units])}_Flow_latent{args.latent_size}"
         return model_id
-    
-    arch = f"scales{args.num_scales}_steps{args.num_steps}_{args.coupling_network}"
-    if args.compression == "vae":
-    
-        if args.linear:
-            if args.stochastic_elbo:
-                model_id = f'NDP_Linear_Stochastic_Flow_latent{args.latent_size}_base{args.base_distributions}'
+
+    else:        
+        arch = f"scales{args.num_scales}_steps{args.num_steps}_{args.coupling_network}"
+        if args.compression == "vae":
+
+            if args.linear:
+                if args.stochastic_elbo:
+                    model_id = f'NDP_Linear_Stochastic_Flow_latent{args.latent_size}_base{args.base_distributions}'
+                else:
+                    model_id = f'NDP_Linear_Analytical_Flow_latent{args.latent_size}_base{args.base_distributions}'
             else:
-                model_id = f'NDP_Linear_Analytical_Flow_latent{args.latent_size}_base{args.base_distributions}'
+                model_id = f"NDP_VAE_{'_'.join([str(elt) for elt in args.vae_hidden_units])}_Flow_latent{args.latent_size}_base{args.base_distributions}"
+
+        elif args.compression == "mvae":
+            model_id = f"Multilevel_Flow_base{args.base_distributions}"
+
+        elif args.compression == "max":
+            model_id = 'Max_Pool_Flow'
+        elif args.compression == "slice":
+            model_id = 'Slice_Pool_Flow'
+        elif args.compression == "none":
+            model_id = 'Bijective_Flow'
         else:
-            model_id = f"NDP_VAE_{'_'.join([str(elt) for elt in args.vae_hidden_units])}_Flow_latent{args.latent_size}_base{args.base_distributions}"
-            
-    elif args.compression == "mvae":
-        model_id = f"Multilevel_Flow_base{args.base_distributions}"
+            raise ValueError(f"No model defined for {args.compression} forms of dimension changes")
 
-    elif args.compression == "max":
-        model_id = 'Max_Pool_Flow'
-    elif args.compression == "slince":
-        model_id = 'Slice_Pool_Flow'
-    elif args.compression == "none":
-        model_id = 'Bijective_Flow'
-    else:
-        raise ValueError(f"No model defined for {args.compression} forms of dimension changes")
-
-    return model_id + "_" + arch
+        return model_id + "_" + arch
 
 
 def get_model(args, data_shape, cond_shape=None):
 
-    if args.pretrained:
+    if args.compression == 'pretrained':
         pretrained_model = PretrainedFlow(data_shape=data_shape,
                                           num_bits=args.num_bits,
                                           num_scales=args.num_scales,
@@ -101,11 +98,13 @@ def get_model(args, data_shape, cond_shape=None):
                                           gated_conv=args.gated_conv)
 
         
-        if not args.fine_tune_pretrained:
-            # Not fine tuning the model, load the original flow's weights and biases from file
+        if hasattr(args, 'load_pretrained_weights') and args.load_pretrained_weights:
+            # Load the pretrained weights from the file
+            # we don't need to load the weights when fine-tuning the whole model (which happens when calling train_more.py)
             
             # Load checkpoint
-            check_path = f'{args.start_model}/check/'
+            assert hasattr(args, 'pretrained_model')
+            check_path = f'{args.pretrained_model}/check/'
             if args.new_device is not None:
                 checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'), map_location=torch.device(args.new_device))
             else:
@@ -113,8 +112,8 @@ def get_model(args, data_shape, cond_shape=None):
 
             pretrained_model.load_state_dict(checkpoint['model'])
 
+            # freeze the pretrained model's layers
             if args.freeze:
-                # freeze the pretrained model's layers
                 for param in pretrained_model.parameters():
                     param.requires_grad = False
                 

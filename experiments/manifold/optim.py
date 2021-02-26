@@ -19,7 +19,10 @@ def add_optim_args(parser):
 
 
 def get_optim_id(args):
-    return f"{args.optimizer}_lr{str(args.lr)[2:]}"
+    lr_str = f"_lr{args.lr:.0e}"
+    exp_str = '_expdecay' if args.exponential_lr else ''
+    warmup_str = f"_warmup{args.warmup}" if args.warmup is not None else ''
+    return f"{args.optimizer}{lr_str}{exp_str}{warmup_str}"
 
 
 def get_optim(args, model):

@@ -24,10 +24,10 @@ from optim import get_optim, get_optim_id, add_optim_args
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default=None)
-parser.add_argument('--new_epochs', type=int, default=None)
-parser.add_argument('--new_lr', type=float, default=None)
-parser.add_argument('--new_device', type=str, default=None)
-parser.add_argument('--new_batch_size', type=int, default=None)
+parser.add_argument('--epochs', type=int, default=None)
+parser.add_argument('--lr', type=float, default=None)
+parser.add_argument('--device', type=str, default=None)
+parser.add_argument('--batch_size', type=int, default=None)
 parser.add_argument('--freeze', type=eval, default=True)
 # VAE Compression parameters
 parser.add_argument('--latent_size', type=int, default=196)
@@ -47,38 +47,35 @@ path_check = '{}/check/checkpoint.pt'.format(more_args.model)
 with open(path_args, 'rb') as f:
     args = pickle.load(f)
 
-# Adjust args
+# Adjust args with new arguments and arguments missing in the pretrained model
 args.name = time.strftime("%Y-%m-%d_%H-%M-%S")
-args.epochs = more_args.new_epochs
 args.resume = None
-args.pretrained = True
-args.fine_tune_pretrained = False  # learn VAE first, then fine tune full model
+args.compression = "pretrained"
 args.exponential_lr = True
-if hasattr(args, 'amp') == False:
-    args.amp = False
-    args.scaler = None
+args.annealing_schedule = 0
+args.load_pretrained weights = True
 
-# Add new args that didn't exist in pretrained model and update with new values
-args.annealing_schedule = more_args.annealing_schedule
+# Store changes to existing args from more_args
+args.pretrained_model = more_args.model
+args.new_epochs = more_args.epochs
+args.new_lr = more_args.lr if more_args.lr is not None else args.lr
+
+# update args with new inputs
+args.epochs = more_args.epochs
+if more_args.lr is not None: args.lr = more_args.lr
+if more_args.batch_size is not None: args.batch_size = more_args.batch_size
+if more_args.device is not None: args.device = more_args.device
 args.freeze = more_args.freeze
 args.latent_size = more_args.latent_size
 args.vae_hidden_units = more_args.vae_hidden_units
 args.vae_activation = more_args.vae_activation
-args.amp = more_args.amp
+
 args.max_grad_norm = more_args.max_grad_norm
 args.early_stop = more_args.early_stop
 args.save_samples = more_args.save_samples
 args.log_tb = more_args.log_tb
 args.log_wandb = more_args.log_wandb
-if more_args.new_lr is not None: args.lr = more_args.new_lr
-if more_args.new_batch_size is not None: args.batch_size = more_args.new_batch_size
-if more_args.new_device is not None: args.device = more_args.new_device
-
-# Store more_args
-args.start_model = more_args.model
-args.new_epochs = more_args.new_epochs
-args.new_device = more_args.new_device
-args.new_lr = more_args.new_lr if more_args.new_lr is not None else args.lr
+args.amp = more_args.amp
 
 
 ##################
@@ -100,7 +97,7 @@ model_id = get_model_id(args)
 #######################
 
 optimizer, _, _ = get_optim(args, model)
-optim_id = f"{args.optimizer}_lr{str(args.lr)[2:]}"
+optim_id = get_optim_id(args)
 
 ##############
 ## Training ##
