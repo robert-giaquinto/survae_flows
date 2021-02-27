@@ -48,7 +48,7 @@ def add_model_args(parser):
 
 def get_model_id(args):
     if args.compression == 'pretrained':
-        model_id = f"Compress_Pretrained_{args.project}_nonpool_VAE_{'_'.join([str(elt) for elt in args.vae_hidden_units])}_Flow_latent{args.latent_size}"
+        model_id = f"Compress_Pretrained_{args.project}_nonpool_MVAE_latent{args.latent_size}"
         return model_id
 
     else:        
