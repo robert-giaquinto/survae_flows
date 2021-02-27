@@ -16,7 +16,7 @@ from .coupling import Coupling, MixtureCoupling
 
 class CompressPretrained(NDPFlow):
 
-    def __init__(self, pretrained_model, vae_hidden_units, latent_size, vae_activation):
+    def __init__(self, pretrained_model, latent_size):
         self.flow_shape = pretrained_model.base_dist.shape
         self.latent_size = latent_size
 
@@ -27,13 +27,13 @@ class CompressPretrained(NDPFlow):
         mencoder = ConditionalNormal(
             ConvEncoderNet(in_channels=48,
                            out_channels=768,
-                           mid_channels=vae_hidden_units,
+                           mid_channels=[64, 128, 256],
                            max_pool=True,
                            batch_norm=True), split_dim=1)
         mdecoder = ConditionalNormal(
             ConvDecoderNet(in_channels=768,
                            out_shape=(48 * 2, 8, 8),
-                           mid_channels=list(reversed(vae_hidden_units)),
+                           mid_channels=[256, 128, 64],
                            batch_norm=True,
                            in_lambda=lambda x: x.view(x.shape[0], x.shape[1], 1, 1)), split_dim=1)
 
@@ -45,12 +45,12 @@ class CompressPretrained(NDPFlow):
         current_shape = pretrained_model.base_dist.shape
         flat_dim = current_shape[0] * current_shape[1] * current_shape[2]
         fencoder = ConditionalNormal(MLP(flat_dim, 2 * latent_size,
-                                        hidden_units=vae_hidden_units,
-                                        activation=vae_activation,
+                                        hidden_units=[512, 256],
+                                        activation='relu',
                                         in_lambda=lambda x: x.view(x.shape[0], flat_dim)))
         fdecoder = ConditionalNormal(MLP(latent_size, 2 * flat_dim,
-                                        hidden_units=list(reversed(vae_hidden_units)),
-                                        activation=vae_activation,
+                                        hidden_units=[256, 512],
+                                        activation='relu',
                                         out_lambda=lambda x: x.view(x.shape[0], current_shape[0]*2, current_shape[1], current_shape[2])), split_dim=1)
 
         # append last scale of pretrained model and extend with the compressive VAE

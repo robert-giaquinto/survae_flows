@@ -121,10 +121,7 @@ def get_model(args, data_shape, cond_shape=None):
             if args.new_device is not None:
                 pretrained_model.to(torch.device(args.new_device))
         
-        model = CompressPretrained(pretrained_model=pretrained_model,
-                                   vae_hidden_units=args.vae_hidden_units,
-                                   latent_size=args.latent_size,
-                                   vae_activation=args.vae_activation)
+        model = CompressPretrained(pretrained_model=pretrained_model, latent_size=args.latent_size)
     
     elif args.compression == "vae":
         

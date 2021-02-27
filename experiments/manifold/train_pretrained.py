@@ -31,8 +31,6 @@ parser.add_argument('--batch_size', type=int, default=None)
 parser.add_argument('--freeze', type=eval, default=True)
 # VAE Compression parameters
 parser.add_argument('--latent_size', type=int, default=196)
-parser.add_argument('--vae_hidden_units', nargs="*", type=int, default=[512, 256])
-parser.add_argument('--vae_activation', type=str, default='none')
 
 add_exp_args(parser)
 more_args = parser.parse_args()
