@@ -29,11 +29,11 @@ parser.add_argument('--lr', type=float, default=None)
 parser.add_argument('--device', type=str, default=None)
 parser.add_argument('--batch_size', type=int, default=None)
 parser.add_argument('--freeze', type=eval, default=True)
-# VAE Compression parameters
 parser.add_argument('--latent_size', type=int, default=196)
 
 add_exp_args(parser)
 more_args = parser.parse_args()
+set_seeds(more_args.seed)
 
 path_args = '{}/args.pickle'.format(more_args.model)
 path_check = '{}/check/checkpoint.pt'.format(more_args.model)
