@@ -52,7 +52,7 @@ args.resume = None
 args.compression = "pretrained"
 args.exponential_lr = True
 args.annealing_schedule = 0
-args.load_pretrained weights = True
+args.load_pretrained_weights = True
 
 # Store changes to existing args from more_args
 args.pretrained_model = more_args.model
