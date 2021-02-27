@@ -106,7 +106,7 @@ def get_model(args, data_shape, cond_shape=None):
             assert hasattr(args, 'pretrained_model')
             check_path = f'{args.pretrained_model}/check/'
             #if args.new_device is not None:
-            checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'), map_location=torch.device(args.new_device))
+            checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'), map_location=torch.device(args.device))
             #else:
             #    checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'))
 
