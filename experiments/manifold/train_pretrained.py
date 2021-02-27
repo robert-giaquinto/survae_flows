@@ -27,9 +27,10 @@ parser.add_argument('--model', type=str, default=None)
 parser.add_argument('--epochs', type=int, default=None)
 parser.add_argument('--lr', type=float, default=None)
 parser.add_argument('--device', type=str, default=None)
+parser.add_argument('--num_workers', type=int, default=None)
 parser.add_argument('--batch_size', type=int, default=None)
 parser.add_argument('--freeze', type=eval, default=True)
-parser.add_argument('--latent_size', type=int, default=196)
+parser.add_argument('--latent_size', type=int, default=384)
 
 add_exp_args(parser)
 more_args = parser.parse_args()
@@ -63,6 +64,7 @@ args.epochs = more_args.epochs
 if more_args.lr is not None: args.lr = more_args.lr
 if more_args.batch_size is not None: args.batch_size = more_args.batch_size
 if more_args.device is not None: args.device = more_args.device
+if more_args.num_workers is not None: args.num_workers = more_args.num_workers
 args.freeze = more_args.freeze
 args.latent_size = more_args.latent_size
 args.vae_hidden_units = more_args.vae_hidden_units
