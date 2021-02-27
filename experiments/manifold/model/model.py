@@ -105,10 +105,10 @@ def get_model(args, data_shape, cond_shape=None):
             # Load checkpoint
             assert hasattr(args, 'pretrained_model')
             check_path = f'{args.pretrained_model}/check/'
-            if args.new_device is not None:
-                checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'), map_location=torch.device(args.new_device))
-            else:
-                checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'))
+            #if args.new_device is not None:
+            checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'), map_location=torch.device(args.new_device))
+            #else:
+            #    checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'))
 
             pretrained_model.load_state_dict(checkpoint['model'])
 
@@ -118,8 +118,8 @@ def get_model(args, data_shape, cond_shape=None):
                     param.requires_grad = False
                 
             # modify model
-            if args.new_device is not None:
-                pretrained_model.to(torch.device(args.new_device))
+            #if args.new_device is not None:
+            pretrained_model.to(torch.device(args.device))
         
         model = CompressPretrained(pretrained_model=pretrained_model, latent_size=args.latent_size)
     
