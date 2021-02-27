@@ -24,14 +24,11 @@ from optim import get_optim, get_optim_id, add_optim_args
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default=None)
-parser.add_argument('--epochs', type=int, default=None)
-parser.add_argument('--lr', type=float, default=None)
-parser.add_argument('--device', type=str, default=None)
-parser.add_argument('--num_workers', type=int, default=None)
-parser.add_argument('--batch_size', type=int, default=None)
 parser.add_argument('--freeze', type=eval, default=True)
 parser.add_argument('--latent_size', type=int, default=384)
 
+add_data_args(parser)
+add_optim_args(parser)
 add_exp_args(parser)
 more_args = parser.parse_args()
 set_seeds(more_args.seed)
@@ -56,26 +53,30 @@ args.load_pretrained_weights = True
 
 # Store changes to existing args from more_args
 args.pretrained_model = more_args.model
-args.new_epochs = more_args.epochs
-args.new_lr = more_args.lr if more_args.lr is not None else args.lr
+args.old_epochs = args.epochs
+args.old_lr = args.lr
 
 # update args with new inputs
-args.epochs = more_args.epochs
-if more_args.lr is not None: args.lr = more_args.lr
-if more_args.batch_size is not None: args.batch_size = more_args.batch_size
-if more_args.device is not None: args.device = more_args.device
-if more_args.num_workers is not None: args.num_workers = more_args.num_workers
 args.freeze = more_args.freeze
 args.latent_size = more_args.latent_size
-args.vae_hidden_units = more_args.vae_hidden_units
-args.vae_activation = more_args.vae_activation
 
+# update with experiment args
+args.epochs = more_args.epochs
+args.lr = more_args.lr
 args.max_grad_norm = more_args.max_grad_norm
 args.early_stop = more_args.early_stop
 args.save_samples = more_args.save_samples
+args.samples = more_args.samples
+args.nrow = more_args.nrow
 args.log_tb = more_args.log_tb
 args.log_wandb = more_args.log_wandb
+args.device = more_args.device
 args.amp = more_args.amp
+args.parallel = more_args.parallel
+
+# update with data args
+args.batch_size = more_args.batch_size
+args.num_workers = more_args.num_workers
 
 
 ##################
@@ -114,9 +115,9 @@ exp = FlowExperiment(args=args,
                      scheduler_iter=None,
                      scheduler_epoch=None)
 
-if more_args.new_lr is not None:
-    # Adjust lr
-    for param_group in exp.optimizer.param_groups:
-        param_group['lr'] = more_args.new_lr
+
+# Adjust lr
+for param_group in exp.optimizer.param_groups:
+    param_group['lr'] = more_args.lr
 
 exp.run()
