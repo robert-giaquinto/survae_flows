@@ -56,8 +56,11 @@ if more_args.new_lr is not None: args.lr = more_args.new_lr
 if more_args.new_batch_size is not None: args.batch_size = more_args.new_batch_size
 if more_args.new_early_stop is not None: args.early_stop = more_args.new_early_stop
 if more_args.new_device is not None: args.device = more_args.new_device
-if more_args.new_amp is not None: args.amp = more_args.new_amp
 if more_args.new_num_workers is not None: args.num_workers = more_args.new_num_workers
+if more_args.new_amp is not None:
+    args.amp = more_args.new_amp
+    if more_args.new_amp:
+        args.parallel = None
 
 # Store more_args
 args.start_model = more_args.model
