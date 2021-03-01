@@ -48,6 +48,8 @@ with open(path_args, 'rb') as f:
 # Adjust args
 args.name = time.strftime("%Y-%m-%d_%H-%M-%S")
 args.resume = None
+args.freeze = False
+args.load_pretrained_weights = False
 args.epochs = more_args.new_epochs
 if more_args.new_lr is not None: args.lr = more_args.new_lr
 if more_args.new_batch_size is not None: args.batch_size = more_args.new_batch_size
