@@ -27,30 +27,37 @@ class ConditionalFlow(ConditionalDistribution):
 
     def log_prob(self, x, context):
         if self.context_init: context = self.context_init(context)
+        
         log_prob = torch.zeros(x.shape[0], device=x.device)
         for transform in self.transforms:
             if isinstance(transform, ConditionalTransform):
                 x, ldj = transform(x, context)
             else:
                 x, ldj = transform(x)
+                
             log_prob += ldj
+            
         if isinstance(self.base_dist, ConditionalDistribution):
             log_prob += self.base_dist.log_prob(x, context)
         else:
             log_prob += self.base_dist.log_prob(x)
+            
         return log_prob
 
     def sample(self, context):
         if self.context_init: context = self.context_init(context)
+
         if isinstance(self.base_dist, ConditionalDistribution):
             z = self.base_dist.sample(context)
         else:
             z = self.base_dist.sample(context_size(context))
+
         for transform in reversed(self.transforms):
             if isinstance(transform, ConditionalTransform):
                 z = transform.inverse(z, context)
             else:
                 z = transform.inverse(z)
+
         return z
 
     def sample_with_log_prob(self, context):

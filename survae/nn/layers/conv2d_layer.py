@@ -64,6 +64,10 @@ class Conv2d(nn.Module):
 
 
 class Conv2dZeros(nn.Module):
+    """
+    2D convolutional layer with zero initialization similar to the Glow Pytorch implementation:
+    https://github.com/chaiyujin/glow-pytorch/blob/master/glow/modules.py
+    """
     def __init__(self, in_channels, out_channels,
                  kernel_size=(3, 3), stride=(1, 1),
                  padding="same", logscale_factor=3):
@@ -86,6 +90,26 @@ class Conv2dZeros(nn.Module):
         output = self.conv(sample)
         return output * torch.exp(self.logs * self.logscale_factor)
 
+        
+class Conv2dResize(nn.Conv2d):
+    """
+    Convolutional 2d layer specific for the conditional 1x1 invertible convolution and coupling layers
+    - Allows the conditional/context inputs to be resized to the same size and other (primary) flow inputs
+
+    https://github.com/yolu1055/conditional-glow/blob/master/modules.py
+    """
+    def __init__(self, in_size, out_size):
+        stride = [in_size[1]//out_size[1], in_size[2]//out_size[2]]
+        kernel_size = Conv2dResize.compute_kernel_size(in_size, out_size, stride)
+        super().__init__(in_channels=in_size[0], out_channels=out_size[0], kernel_size=kernel_size, stride=stride)
+        self.weight.data.zero_()
+
+    @staticmethod
+    def compute_kernel_size(in_size, out_size, stride):
+        k0 = in_size[1] - (out_size[1] - 1) * stride[0]
+        k1 = in_size[2] - (out_size[2] - 1) * stride[1]
+        return[k0,k1]
+    
 
 class GatedConv2d(nn.Module):
     """

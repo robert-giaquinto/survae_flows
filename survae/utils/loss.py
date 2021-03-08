@@ -12,7 +12,7 @@ def loglik_nats(model, x, beta=None):
 
 def loglik_bpd(model, x, beta=None):
     """Compute the log-likelihood in bits per dim."""
-    if type(x) is tuple:
+    if isinstance(x, list) or isinstance(x, tuple):
         if beta is None:
             return - model.log_prob(x[0], context=x[1]).sum() / (math.log(2) * x[0].shape.numel())
         else:

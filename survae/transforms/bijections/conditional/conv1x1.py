@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from survae.transforms.bijections.conditional import ConditionalBijection
-from survae.nn.layers import LinearZeros, LinearNorm
+from survae.nn.layers import LinearZeros, LinearNorm, Conv2dResize
 
 
 class ConditionalConv1x1(ConditionalBijection):
@@ -62,9 +62,6 @@ class ConditionalConv1x1(ConditionalBijection):
             nn.Tanh()
         )
 
-    def _conv(self, weight, v):
-        return F.conv2d(v, weight.unsqueeze(-1).unsqueeze(-1))
-
     def get_weight(self, x, context, reverse):
         x_channels = x.size(1)
         B, C, H, W = context.size()
@@ -73,18 +70,18 @@ class ConditionalConv1x1(ConditionalBijection):
         context = self.cond_linear(context)
         weight = context.view(B, self.num_channels, self.num_channels)
 
-        dimensions = x.size(2) * x.size(3)
-        if self.slogdet_cpu:
-            logdet = torch.slogdet(weight.to('cpu'))[1] * dimensions
-        else:
-             logdet = torch.slogdet(weight)[1] * dimensions
-
         if reverse == False:
+            dimensions = x.size(2) * x.size(3)
+            if self.slogdet_cpu:
+                logdet = torch.slogdet(weight.to('cpu'))[1] * dimensions
+            else:
+                logdet = torch.slogdet(weight)[1] * dimensions
+
             weight = weight.view(B, self.num_channels, self.num_channels, 1, 1)
+            return weight, logdet.to(weight.device)
         else:
             weight = torch.inverse(weight.double()).float().view(B, self.num_channels, self.num_channels, 1, 1)
-
-        return weight, logdet.to(weight.device)
+            return weight
 
     def forward(self, x, context):
         weight, logdet = self.get_weight(x, context, reverse=False)
@@ -100,7 +97,7 @@ class ConditionalConv1x1(ConditionalBijection):
         return z, logdet
 
     def inverse(self, x, context):
-        weight, logdet = self.get_weight(x, context, reverse=True)
+        weight = self.get_weight(x, context, reverse=True)
         B, C, H, W = x.size()
         x = x.view(1, B*C, H, W)
         B_k, C_i_k, C_o_k, H_k, W_k = weight.size()
@@ -110,32 +107,5 @@ class ConditionalConv1x1(ConditionalBijection):
         z = F.conv2d(x, weight, groups=B)
         z = z.view(B, C, H, W)
 
-        return z, logdet
+        return z
 
-
-    
-class Conv2dZeros(nn.Conv2d):
-    """
-    Convolutional 2d layer specific for the conditional 1x1 invertible convolutioon
-    """
-    def __init__(self, in_channel, out_channel, kernel_size=[3,3], stride=[1,1]):
-        padding = (kernel_size[0] - 1) // 2
-        super().__init__(in_channels=in_channel, out_channels=out_channel, kernel_size=kernel_size, stride=stride, padding=padding)
-        self.weight.data.normal_(mean=0.0, std=0.1)
-
-        
-class Conv2dResize(nn.Conv2d):
-    """
-    Convolutional 2d layer specific for the conditional 1x1 invertible convolutioon
-    """
-    def __init__(self, in_size, out_size):
-        stride = [in_size[1]//out_size[1], in_size[2]//out_size[2]]
-        kernel_size = Conv2dResize.compute_kernel_size(in_size, out_size, stride)
-        super().__init__(in_channels=in_size[0], out_channels=out_size[0], kernel_size=kernel_size, stride=stride)
-        self.weight.data.zero_()
-
-    @staticmethod
-    def compute_kernel_size(in_size, out_size, stride):
-        k0 = in_size[1] - (out_size[1] - 1) * stride[0]
-        k1 = in_size[2] - (out_size[2] - 1) * stride[1]
-        return[k0,k1]

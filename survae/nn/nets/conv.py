@@ -3,12 +3,13 @@ import torch.nn as nn
 
 from survae.nn.layers import LambdaLayer
 from survae.nn.layers import act_module
-from survae.nn.layers import Conv2d, Conv2dZeros, GatedConv, GatedConv2d, GatedConvTranspose2d
+from survae.nn.layers import Conv2d, Conv2dZeros, Conv2dResize, GatedConv, GatedConv2d, GatedConvTranspose2d
 
 
 class ConvNet(nn.Sequential):
     """
-    Convolution net useful in coupling layers. Uses 3-1-3 filters.
+    Convolution net useful in coupling layers. Uses 3-1-3 filters. Similar to the Glow Pytorch implementation:
+    https://github.com/chaiyujin/glow-pytorch/blob/master/glow/models.py
     """
     def __init__(self, in_channels, out_channels, mid_channels, num_layers=1, activation='relu', weight_norm=True, in_lambda=None, out_lambda=None):
 
@@ -24,6 +25,30 @@ class ConvNet(nn.Sequential):
         if out_lambda: layers.append(LambdaLayer(out_lambda))
 
         super(ConvNet, self).__init__(*layers)
+
+
+class ResizeConvNet(nn.Sequential):
+    """
+    Context convolution net used in the CondAffineCoupling of:
+    https://github.com/yolu1055/conditional-glow/blob/master/modules.py
+
+    - Resizes the input to the output size with convolutional layers
+    """
+    def __init__(self, in_size, out_size, mid_channels, activation='relu', in_lambda=None, out_lambda=None):
+
+        layers = []
+        if in_lambda: layers.append(LambdaLayer(in_lambda))
+        
+        layers.append(Conv2dZeros(in_size[0], mid_channels))
+        if activation is not None: layers.append(act_module(activation, allow_concat=False))
+        
+        layers.append(Conv2dResize(in_size=(mid_channels, in_size[1], in_size[2]), out_size=out_size))
+        if activation is not None: layers.append(act_module(activation, allow_concat=False))
+        
+        layers.append(Conv2dZeros(out_size[0], out_size[0]))
+        if out_lambda: layers.append(LambdaLayer(out_lambda))
+
+        super(ResizeConvNet, self).__init__(*layers)
 
 
 class GatedConvNet(nn.Sequential):
