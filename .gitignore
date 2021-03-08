@@ -1,4 +1,4 @@
-*.egg-info
+i*.egg-info
 __pycache__
 data_path
 data/*
@@ -9,4 +9,6 @@ venv/
 */._.DS_Store
 experiments/manifold/log/*
 experiments/image/log/*
+experiments/gbnf/log/*
 examples/results/*.png
+debug*.sh
