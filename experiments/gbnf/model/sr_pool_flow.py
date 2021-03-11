@@ -23,15 +23,17 @@ class ContextInit(nn.Module):
             if out_shape is None:
                 out_shape = context_shape
 
-            self.encode = DenseNet(in_channels=context_shape[0],
-                                    out_channels=context_shape[0],
-                                    num_blocks=num_blocks,
-                                    mid_channels=min(mid_channels),
-                                    depth=depth,
-                                    growth=min(mid_channels),
-                                    dropout=dropout,
-                                    gated_conv=False,
-                                    zero_init=False)
+            if num_blocks > 0:
+                self.encode = DenseNet(in_channels=context_shape[0],
+                                       out_channels=context_shape[0],
+                                       num_blocks=num_blocks,
+                                       mid_channels=min(mid_channels),
+                                       depth=depth,
+                                       growth=min(mid_channels),
+                                       dropout=dropout,
+                                       gated_conv=False,
+                                       zero_init=False)
+            
             self.upsample = ConvDecoderNet(in_channels=context_shape[0],
                                            out_shape=out_shape,
                                            mid_channels=mid_channels,
@@ -41,7 +43,8 @@ class ContextInit(nn.Module):
         context, _ = self.dequant(context)
         context, _ = self.shift(context)
         if self.encode:
-            #context = self.encode(context)
+            context = self.encode(context)
+        if sef.upsample:
             context = self.upsample(context)
             
         return context
@@ -58,7 +61,7 @@ class SRPoolFlow(ConditionalFlow):
                  coupling_blocks, coupling_channels, coupling_dropout,
                  coupling_gated_conv=None, coupling_depth=None, coupling_mixtures=None):
 
-        batch_norm=False
+        batch_norm=True
         conditional_channels = [coupling_channels // 2] if conditional_channels is None else list(conditional_channels)
         
         transforms = []
@@ -157,9 +160,9 @@ class SRPoolFlow(ConditionalFlow):
         self.flow_shape = current_shape
 
         context_init = ContextInit(num_bits=num_bits, context_shape=cond_shape, out_shape=data_shape,
-                                   num_blocks=1,
+                                   num_blocks=2,
                                    depth=1,
-                                   mid_channels=[coupling_channels // 2],
+                                   mid_channels=[coupling_channels // 2, coupling_channels],
                                    dropout=0.0,
                                    norm=batch_norm)
         super(SRPoolFlow, self).__init__(base_dist=ConvNormal2d(current_shape),
