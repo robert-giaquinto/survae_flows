@@ -57,7 +57,8 @@ def get_data(args):
         dataset = CelebA32(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution, sr_scale_factor=args.sr_scale_factor)
     elif args.dataset == 'celeba64':
         dataset = CelebA64(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution, sr_scale_factor=args.sr_scale_factor)
-
+    else:
+        raise ValueError(f"{dataset} is an unrecognized dataset.")
 
     # Data Loader
     train_loader, test_loader = dataset.get_data_loaders(batch_size=args.batch_size, pin_memory=args.pin_memory, num_workers=args.num_workers)
@@ -96,7 +97,13 @@ def get_data_shape(dataset):
         data_shape = (3,64,64)
     elif dataset == 'svhn':
         data_shape = (3,32,32)
-
+    elif dataset == 'celeba32':
+        data_shape = (3,32,32)
+    elif dataset == 'celeba32':
+        data_shape = (3,32,32)
+    else:
+        raise ValueError(f"{dataset} is an unrecognized dataset.")
+        
     return data_shape
 
 
@@ -108,6 +115,9 @@ def get_sr_shape(dataset, sr_scale_factor):
 
 
 def get_label_shape(dataset):
+    """
+    Just a placehold for now, conditional models should be up and running soon!
+    """
     if dataset in ['mnist', 'binary_mnist']:
         cond_shape = (1,)
     elif dataset == 'cifar10':
@@ -118,6 +128,13 @@ def get_label_shape(dataset):
         cond_shape = None
     elif dataset == 'svhn':
         cond_shape = None
+    elif dataset == 'celeba32':
+        cond_shape = None
+    elif dataset == 'celeba32':
+        cond_shape = None
+    else:
+        raise ValueError(f"{dataset} is an unrecognized dataset.")
+
 
     return cond_shape
 
