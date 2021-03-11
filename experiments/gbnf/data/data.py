@@ -2,9 +2,9 @@ import math
 from torch.utils.data import DataLoader
 from torchvision.transforms import RandomHorizontalFlip, Pad, RandomAffine, CenterCrop
 from survae.data.loaders.image import DynamicallyBinarizedMNIST, FixedBinarizedMNIST, MNIST
-from survae.data.loaders.image import CIFAR10, ImageNet32, ImageNet64, SVHN
+from survae.data.loaders.image import CIFAR10, ImageNet32, ImageNet64, SVHN, CelebA32, CelebA64
 
-dataset_choices = {'cifar10', 'imagenet32', 'imagenet64', 'svhn', 'mnist', 'binary_mnist'}
+dataset_choices = {'cifar10', 'imagenet32', 'imagenet64', 'svhn', 'mnist', 'binary_mnist', 'celeba32', 'celeba64'}
 
 
 def add_data_args(parser):
@@ -12,13 +12,14 @@ def add_data_args(parser):
     # Data params
     parser.add_argument('--dataset', type=str, default='mnist', choices=dataset_choices)
     parser.add_argument('--num_bits', type=int, default=8)
+    parser.add_argument('--sr_scale_factor', type=int, default=4,
+                        help='Resizing factor for low-resolution image in super-resolution models (2=half, 4=quarter, etc.)')
 
     # Train params
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--pin_memory', type=eval, default=True)
     parser.add_argument('--augmentation', type=str, default=None)
-
 
 
 def get_data_id(args):
@@ -34,7 +35,7 @@ def get_data(args):
     super_resolution = args.flow == "sr"
     conditional = args.flow == "conditional"
     if super_resolution:
-        cond_shape = get_sr_shape(args.dataset)
+        cond_shape = get_sr_shape(args.dataset, args.sr_scale_factor)
     elif conditional:
         cond_shape = get_label_shape(args.dataset)
     else:
@@ -43,15 +44,20 @@ def get_data(args):
     if args.dataset == 'binary_mnist':
         dataset = DynamicallyBinarizedMNIST()
     elif args.dataset == 'mnist':
-        dataset = MNIST(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution)
+        dataset = MNIST(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution, sr_scale_factor=args.sr_scale_factor)
     elif args.dataset == 'cifar10':
-        dataset = CIFAR10(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution)
+        dataset = CIFAR10(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution, sr_scale_factor=args.sr_scale_factor)
     elif args.dataset == 'imagenet32':
         dataset = ImageNet32(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution)
     elif args.dataset == 'imagenet64':
         dataset = ImageNet64(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution)
     elif args.dataset == 'svhn':
         dataset = SVHN(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution)
+    elif args.dataset == 'celeba32':
+        dataset = CelebA32(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution, sr_scale_factor=args.sr_scale_factor)
+    elif args.dataset == 'celeba64':
+        dataset = CelebA64(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution, sr_scale_factor=args.sr_scale_factor)
+
 
     # Data Loader
     train_loader, test_loader = dataset.get_data_loaders(batch_size=args.batch_size, pin_memory=args.pin_memory, num_workers=args.num_workers)
@@ -94,19 +100,11 @@ def get_data_shape(dataset):
     return data_shape
 
 
-def get_sr_shape(dataset):
-    if dataset in ['mnist', 'binary_mnist']:
-        data_shape = (1,14,14)
-    elif dataset == 'cifar10':
-        data_shape = (3,16,16)
-    elif dataset == 'imagenet32':
-        data_shape = (3,16,16)
-    elif dataset == 'imagenet64':
-        data_shape = (3,32,32)
-    elif dataset == 'svhn':
-        data_shape = (3,16,16)
-
-    return data_shape
+def get_sr_shape(dataset, sr_scale_factor):
+    data_shape = get_data_shape(dataset)
+    assert data_shape[1] % sr_scale_factor == 0 and data_shape[2] % sr_scale_factor == 0
+    sr_shape = (data_shape[0], data_shape[1] // sr_scale_factor, data_shape[2] // sr_scale_factor)
+    return sr_shape
 
 
 def get_label_shape(dataset):

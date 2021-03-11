@@ -5,10 +5,9 @@ import pickle
 import argparse
 from utils import set_seeds
 
-from survae.distributions import ConvNormal2d, StandardNormal, StandardUniform
-
 # Exp
-from experiment.flow import FlowExperiment, add_exp_args
+from experiment.flow_experiment import FlowExperiment, add_exp_args
+from experiment.boosted_experiment import BoostedFlowExperiment
 
 # Data
 from data.data import get_data, get_data_id, add_data_args
@@ -72,14 +71,14 @@ args.new_lr = more_args.new_lr if more_args.new_lr is not None else args.lr
 ## Specify data ##
 ##################
 
-train_loader, eval_loader, data_shape = get_data(args)
+train_loader, eval_loader, data_shape, cond_shape = get_data(args)
 data_id = get_data_id(args)
 
 ###################
 ## Specify model ##
 ###################
 
-model = get_model(args, data_shape=data_shape)
+model = get_model(args, data_shape=data_shape, cond_shape=cond_shape)
 model_id = get_model_id(args)
 
 #######################
@@ -93,6 +92,7 @@ optim_id = f"more_{get_optim_id(args)}"
 ## Training ##
 ##############
 
+Experiment = BoostedFlowExperiment if args.boosted_components > 1 else FlowExperiment
 exp = FlowExperiment(args=args,
                      data_id=data_id,
                      model_id=model_id,

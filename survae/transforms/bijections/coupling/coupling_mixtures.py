@@ -96,7 +96,6 @@ class LogisticMixtureAffineCouplingBijection(CouplingBijection):
         self.set_bisection_params()
         assert callable(scale_fn)
         self.scale_fn = scale_fn
-        #self.sigmoid_inv = SigmoidInverse()
 
     def set_bisection_params(self, eps=1e-10, max_iters=100):
         self.max_iters = max_iters
@@ -119,14 +118,11 @@ class LogisticMixtureAffineCouplingBijection(CouplingBijection):
                                                         max_iters=self.max_iters,
                                                         inverse=False)
 
-        # logistic inverse transform
-        #x, sigmoid_ldj = self.sigmoid_inv(x)
-
         # affine transformation
         z = scale * x + shift
         logistic_ldj = sum_except_batch(ldj_elementwise)
         scale_ldj = sum_except_batch(torch.log(scale))
-        ldj = logistic_ldj + scale_ldj #+ sigmoid_ldj
+        ldj = logistic_ldj + scale_ldj
         return z, ldj
 
     def _elementwise_inverse(self, z, elementwise_params):
@@ -135,7 +131,6 @@ class LogisticMixtureAffineCouplingBijection(CouplingBijection):
         scale = self.scale_fn(unconstrained_scale)
         log_scales = log_scales.clamp(min=-7)  # From the code in original Flow++ paper
         x = (z - shift) / scale
-        #x = torch.sigmoid(x)
         x = x.clamp(1e-5, 1.0 - 1e-5)
         x = logistic_mixture_transform(inputs=x,
                                        logit_weights=logit_weights,

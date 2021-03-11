@@ -301,8 +301,11 @@ class FlowExperiment(BaseExperiment):
                 
         # save real samples too
         path_true_samples = '{}/samples/true_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
-        imgs = next(iter(self.eval_loader))[:self.args.samples]
-        vutils.save_image(imgs.cpu().float(), path_true_samples, nrow=self.args.nrow)
+        imgs = next(iter(self.eval_loader))[:self.args.samples].cpu().float()
+        if imgs.max().item() > 2:
+            imgs /= (2**self.args.num_bits - 1)
+        vutils.save_image(imgs, path_true_samples, nrow=self.args.nrow)
+
 
     def stop_early(self, loss_dict, epoch):
         if self.args.early_stop == 0 or epoch < self.args.annealing_schedule:

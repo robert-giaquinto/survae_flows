@@ -10,10 +10,11 @@ class MNIST(TrainTestLoader):
     http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf
     '''
 
-    def __init__(self, root=DATA_PATH, download=True, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False):
+    def __init__(self, root=DATA_PATH, download=True, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
 
         self.root = root
         self.y_classes = 10
+        self.sr_scale_factor = sr_scale_factor
 
         # Define transformations
         trans_train = pil_transforms + [ToTensor(), Quantize(num_bits)]
@@ -21,8 +22,8 @@ class MNIST(TrainTestLoader):
 
         # Load data
         if super_resolution:
-            self.train = SuperResolutionMNISTDataset(root, train=True, transform=Compose(trans_train), download=download)
-            self.test = SuperResolutionMNISTDataset(root, train=False, transform=Compose(trans_test))
+            self.train = SuperResolutionMNISTDataset(root, train=True, transform=Compose(trans_train), download=download, sr_scale_factor=sr_scale_factor)
+            self.test = SuperResolutionMNISTDataset(root, train=False, transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
         elif conditional:
             self.train = SupervisedMNISTDataset(root, train=True, transform=Compose(trans_train), download=download)
             self.test = SupervisedMNISTDataset(root, train=False, transform=Compose(trans_test))

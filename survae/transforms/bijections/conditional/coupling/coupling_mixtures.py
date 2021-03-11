@@ -105,30 +105,8 @@ class ConditionalLogisticMixtureAffineCouplingBijection(ConditionalCouplingBijec
     def _output_dim_multiplier(self):
         return 3 * self.num_mixtures + 2
     
-    def forward(self, x, context):
-        if self.context_net: context = self.context_net(context)
-        id, x2 = self.split_input(x)
-
-        elementwise_params = self.coupling_net(id, context)
-
-        z2, ldj = self._elementwise_forward(x2, elementwise_params)
-        z = torch.cat([id, z2], dim=self.split_dim)
-        return z, ldj
-
-    def inverse(self, z, context):
-        if self.context_net: context = self.context_net(context)
-        id, z2 = self.split_input(z)
-        #context = torch.cat([id, context], dim=self.split_dim)
-        #elementwise_params = self.coupling_net(context)
-        elementwise_params = self.coupling_net(id, context)
-        x2 = self._elementwise_inverse(z2, elementwise_params)
-        x = torch.cat([id, x2], dim=self.split_dim)
-        return x
-
-
-    def _elementwise(self, x, elementwise_params, inverse):
+    def _elementwise_forward(self, x, elementwise_params):
         assert elementwise_params.shape[-1] == self._output_dim_multiplier()
-
         unconstrained_scale, shift, logit_weights, means, log_scales = get_flowpp_params(elementwise_params, num_mixtures=self.num_mixtures)
         scale = self.scale_fn(unconstrained_scale)
         log_scales = log_scales.clamp(min=-7)  # From the code in original Flow++ paper
@@ -139,25 +117,30 @@ class ConditionalLogisticMixtureAffineCouplingBijection(ConditionalCouplingBijec
                                                         log_scales=log_scales,
                                                         eps=self.eps,
                                                         max_iters=self.max_iters,
-                                                        inverse=inverse)
+                                                        inverse=False)
 
-        if inverse:
-            z = (x - shift) / scale
-            return z
-        else:
-            z = scale * x + shift
-            logistic_ldj = sum_except_batch(ldj_elementwise)
-            scale_ldj = sum_except_batch(torch.log(scale))
-            ldj = logistic_ldj + scale_ldj
-            
-            return z, ldj
-
-    def _elementwise_forward(self, x, elementwise_params):
-        return self._elementwise(x, elementwise_params, inverse=False)
+        # affine transformation
+        z = scale * x + shift
+        logistic_ldj = sum_except_batch(ldj_elementwise)
+        scale_ldj = sum_except_batch(torch.log(scale))
+        ldj = logistic_ldj + scale_ldj
+        return z, ldj
 
     def _elementwise_inverse(self, z, elementwise_params):
-        return self._elementwise(z, elementwise_params, inverse=True)
-
+        assert elementwise_params.shape[-1] == self._output_dim_multiplier()
+        unconstrained_scale, shift, logit_weights, means, log_scales = get_flowpp_params(elementwise_params, num_mixtures=self.num_mixtures)
+        scale = self.scale_fn(unconstrained_scale)
+        log_scales = log_scales.clamp(min=-7)  # From the code in original Flow++ paper
+        x = (z - shift) / scale
+        x = x.clamp(1e-5, 1.0 - 1e-5)
+        x = logistic_mixture_transform(inputs=x,
+                                       logit_weights=logit_weights,
+                                       means=means,
+                                       log_scales=log_scales,
+                                       eps=self.eps,
+                                       max_iters=self.max_iters,
+                                       inverse=True)
+        return x
 
 
 class ConditionalCensoredLogisticMixtureCouplingBijection(ConditionalCouplingBijection):

@@ -9,8 +9,7 @@ class DenseLayer(nn.Module):
         layers = []
 
         layers.extend([
-            nn.Conv2d(in_channels, in_channels, kernel_size=1,
-                      stride=1, padding=0, bias=True),
+            nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, padding=0, bias=True),
             nn.ReLU(inplace=True),
         ])
 
@@ -18,8 +17,7 @@ class DenseLayer(nn.Module):
             layers.append(nn.Dropout(p=dropout))
 
         layers.extend([
-            nn.Conv2d(in_channels, growth, kernel_size=3,
-                      stride=1, padding=1, bias=True),
+            nn.Conv2d(in_channels, growth, kernel_size=3, stride=1, padding=1, bias=True),
             nn.ReLU(inplace=True)
         ])
 
@@ -35,8 +33,7 @@ class GatedConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, padding):
         super(GatedConv2d, self).__init__()
         self.in_channels = in_channels
-        self.conv = nn.Conv2d(in_channels, out_channels * 3,
-                              kernel_size=kernel_size, padding=padding)
+        self.conv = nn.Conv2d(in_channels, out_channels * 3, kernel_size=kernel_size, padding=padding)
 
     def forward(self, x):
         h = self.conv(x)

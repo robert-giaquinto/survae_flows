@@ -119,7 +119,10 @@ class _Network(nn.Module):
 class _ConvDecoder(_Network):
     """
     Convolutional encoder for use with a variational autoencoder
-    Only to be called by ConvEncoderNet
+    Only to be called by ConvEncoderNet.
+
+    Uses transposed convolutions to increase the spatial dimensions of the input back to the 
+    size of the original input.
     """
     def __init__(self, in_channels, out_shape, mid_channels, batch_norm, init_weights=True):
         super(_ConvDecoder, self).__init__()
@@ -131,12 +134,6 @@ class _ConvDecoder(_Network):
             feature_layers.append(nn.ReLU(inplace=True))
 
         self.features = nn.Sequential(*feature_layers)
-
-        # self.features = nn.Sequential(
-        #     nn.ConvTranspose2d(in_channels, 256, kernel_size=3, stride=2, padding=0), nn.BatchNorm2d(256), nn.ReLU(inplace=True),
-        #     nn.ConvTranspose2d(256,         128, kernel_size=3, stride=2, padding=0), nn.BatchNorm2d(128), nn.ReLU(inplace=True),
-        #     nn.ConvTranspose2d(128,          64, kernel_size=3, stride=2, padding=0), nn.BatchNorm2d( 64), nn.ReLU(inplace=True)
-        # )
         self.avgpool = nn.AdaptiveAvgPool2d((out_shape[1], out_shape[2]))
         self.conv1x1 = nn.Conv2d(mid_channels[-1], out_shape[0], kernel_size=1, stride=1)
 
@@ -150,13 +147,14 @@ class _ConvDecoder(_Network):
         return out
         
 
-class _ConvEncoder(_Network):
+class Conv2Flat(_Network):
     """
-    Gated convolutional encoder for use with a variational autoencoder
-    Only to be called by ConvEncoderNet
+    Encoder portion of variational autoencoder. Does not perform the final splitting and scaling of the mean and variance though
+    (see _ConvEncoder for the full module to be used in the VAE).
+    This can be used as a convolution network anytime the input needs to be transformed to a flat vector.
     """
     def __init__(self, in_channels, out_channels, mid_channels, max_pool, batch_norm, init_weights=True):
-        super(_ConvEncoder, self).__init__()
+        super(Conv2Flat, self).__init__()
 
         feature_layers = []
         for i, (in_size, out_size) in enumerate(zip([in_channels] + mid_channels[:-1], mid_channels)):
@@ -167,18 +165,9 @@ class _ConvEncoder(_Network):
                 feature_layers.append(nn.MaxPool2d(kernel_size=2, stride=2))
 
         self.features = nn.Sequential(*feature_layers)
-            
-        # self.features = nn.Sequential(
-        #     nn.Conv2d(in_channels,  64, kernel_size=3, padding=2), nn.BatchNorm2d( 64), nn.ReLU(inplace=True),
-        #     nn.MaxPool2d(kernel_size=2, stride=2),
-        #     nn.Conv2d(64,           128, kernel_size=3, padding=2), nn.BatchNorm2d(128), nn.ReLU(inplace=True),
-        #     nn.MaxPool2d(kernel_size=2, stride=2),
-        #     nn.Conv2d(128,          256, kernel_size=3, padding=2), nn.BatchNorm2d(256), nn.ReLU(inplace=True)
-        # )
-
+        
         self.avgpool = nn.AdaptiveAvgPool2d((1,1))
-        self.conv1x1 = nn.Conv2d(mid_channels[-1], out_channels * 2, kernel_size=1, stride=1)
-        self.var_activation = nn.Sequential(nn.Softplus(), nn.Hardtanh(min_val=0.01, max_val=7.0))
+        self.conv1x1 = nn.Conv2d(mid_channels[-1], out_channels, kernel_size=1, stride=1)
 
         if init_weights:
             self._initialize_weights()
@@ -187,13 +176,31 @@ class _ConvEncoder(_Network):
         out = self.features(x)
         out = self.avgpool(out)
         out = self.conv1x1(out)
+        return out
 
-        mean, var = out.chunk(2, dim=1)
+
+class _ConvEncoder(_Network):
+    """
+    Convolutional encoder for use with a variational autoencoder
+    Only to be called by ConvEncoderNet
+
+    Note: out_channels is the size of the latent space. The module will automatically double the encoder's
+          output channels and split it into the mean and variance.
+    """
+    def __init__(self, in_channels, out_channels, mid_channels, max_pool, batch_norm, init_weights=True):
+        super(_ConvEncoder, self).__init__()
+        self.encode = Conv2Flat(in_channels, out_channels * 2, mid_channels, max_pool, batch_norm, init_weights)
+        self.var_activation = nn.Sequential(nn.Softplus(), nn.Hardtanh(min_val=0.01, max_val=7.0))
+
+        if init_weights:
+            self._initialize_weights()
+        
+    def forward(self, x):
+        hidden = self.encode(x)
+        mean, var = hidden.chunk(2, dim=1)
         log_var = self.var_activation(var)
         out = torch.cat((mean, log_var), dim=1)
         return out
-
-    
 
 
 

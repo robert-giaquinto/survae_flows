@@ -35,35 +35,28 @@ class TransformerNet(nn.Module):
         num_mixtures (int): Number of components in the mixture.
         dropout (float): Dropout probability.
         use_attn (bool): Use attention in each block.
-        context_channels (int): Number of channels in optional contextual auxillary input.
+        context_channels (int): Optional number of context channels to expect for the input layer.
+                                Network will still only output mixture parameters for each of the in_channels.
     """
-    def __init__(self, in_channels, mid_channels, num_blocks, num_mixtures, dropout, use_attn=True, context_channels=None, in_lambda=None, out_lambda=None):
+    def __init__(self, in_channels, mid_channels, num_blocks, num_mixtures, dropout, use_attn=True, context_channels=0, in_lambda=None, out_lambda=None):
         super(TransformerNet, self).__init__()
         
         self.in_lambda = LambdaLayer(in_lambda) if in_lambda else None
             
-        self.conv1 = Conv2d(in_channels, mid_channels, kernel_size=3, padding=1)
-        attn_blocks = [ConvAttnBlock(mid_channels, dropout, use_attn, context_channels) for _ in range(num_blocks)]
+        self.conv1 = Conv2d(in_channels + context_channels, mid_channels, kernel_size=3, padding=1)
+        attn_blocks = [ConvAttnBlock(mid_channels, dropout, use_attn) for _ in range(num_blocks)]
         self.attn_blocks = nn.ModuleList(attn_blocks)
         
         self.conv2 = Conv2d(mid_channels, in_channels * (2 + 3 * num_mixtures), kernel_size=3, padding=1)
         self.out_lambda = layers.append(LambdaLayer(out_lambda)) if out_lambda else None
 
-        # layers = []
-        # if in_lambda: layers.append(LambdaLayer(in_lambda))
-        # layers += [Conv2d(in_channels, mid_channels, kernel_size=3, padding=1)]
-        # layers += [ConvAttnBlock(mid_channels, dropout, use_attn, context_channels) for _ in range(num_blocks)]
-        # layers += [Conv2d(mid_channels, in_channels * (2 + 3 * num_mixtures), kernel_size=3, padding=1)]
-        # if out_lambda: layers.append(LambdaLayer(out_lambda))
-        #super(TransformerNet, self).__init__(*layers)
-
-    def forward(self, x, context=None):
+    def forward(self, x):
         if self.in_lambda:
             x = self.in_lambda(x)
 
         x = self.conv1(x)
         for attn in self.attn_blocks:
-            x = attn(x, context)
+            x = attn(x)
         x = self.conv2(x)
 
         if self.out_lambda:
@@ -74,7 +67,7 @@ class TransformerNet(nn.Module):
 
 
 class ConvAttnBlock(nn.Module):
-    def __init__(self, channels, dropout, use_attn, context_channels):
+    def __init__(self, channels, dropout, use_attn, context_channels=None):
         super(ConvAttnBlock, self).__init__()
         self.conv = GatedConv(channels, context_channels=context_channels, dropout=dropout)
         self.norm_1 = nn.LayerNorm(channels)
@@ -84,8 +77,8 @@ class ConvAttnBlock(nn.Module):
         else:
             self.attn = None
 
-    def forward(self, x, context=None):
-        x = self.conv(x, context) + x
+    def forward(self, x):
+        x = self.conv(x) + x
         x = x.permute(0, 2, 3, 1)  # (b, h, w, c)
         x = self.norm_1(x)
 
@@ -112,7 +105,7 @@ class GatedAttn(nn.Module):
         num_heads (int): Number of attention heads.
         dropout (float): Dropout probability.
     """
-    def __init__(self, d_model, num_heads=4, dropout=0.):
+    def __init__(self, d_model, num_heads=4, dropout=0.0):
         super(GatedAttn, self).__init__()
         self.d_model = d_model
         self.num_heads = num_heads
@@ -162,9 +155,10 @@ class GatedAttn(nn.Module):
         if bias:
             weights += self.bias
         weights = F.softmax(weights, dim=-1)
-        weights = F.dropout(weights, self.dropout, self.training)
+        if self.dropout > 0.0:
+            weights = F.dropout(weights, self.dropout, self.training)
+            
         attn = torch.matmul(weights, v)
-
         return attn
 
     @staticmethod

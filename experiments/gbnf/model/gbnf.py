@@ -1,3 +1,4 @@
+
 import torch
 import torch.nn as nn
 import copy
@@ -22,7 +23,7 @@ class GBNF(BoostedFlow):
         for c in range(args.boosted_components):
             flow_args = copy.deepcopy(args)
             flow_args.boosted_components = 1
-            flow = init_model(flow_args, data_shape)
+            flow = init_model(args=flow_args, data_shape=data_shape)
             flows.append(flow)
         
 

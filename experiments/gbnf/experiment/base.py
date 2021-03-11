@@ -101,6 +101,10 @@ class BaseExperiment(object):
             f.write(str(args_table))
 
     def save_architecture(self):
+        if self.args.name == "debug":
+            print(self.model)
+            print(f"\nNumber of trainable model parameters: {count_parameters(self.model)}\n")
+            
         with open(os.path.join(self.log_path, 'architecture.txt'), "w") as f:
             f.write(str(self.model))
             f.write(f"\nNumber of trainable model parameters: {count_parameters(self.model)}\n")

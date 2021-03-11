@@ -98,6 +98,40 @@ class BoostedFlowExperiment(FlowExperiment):
         self.sample_fn()
 
     def eval_fn(self, epoch):
+        if self.args.flow in ['sr', 'conditional']:
+            return self._cond_eval_fn(epoch)
+        else:
+            return self._eval_fn(epoch)
+    
+    def _cond_eval_fn(self, epoch):
+        self.model.eval()
+        with torch.no_grad():
+            loss_sum = 0.0
+            loss_sum2 = 0.0
+            loss_sum3 = 0.0
+            loss_count = 0
+            for (x, context) in self.eval_loader:
+                batch_size = len(x)
+                context = context.to(self.args.device)
+                x = x.to(self.args.device)
+                
+                loss = -1.0 * self.model.mult_mixture_log_prob(x, context).sum() / (math.log(2) * x.shape.numel())
+                loss_sum += loss.detach().cpu().item() * batch_size
+
+                loss2 = -1.0 * self.model.add_mixture_log_prob(x, context).sum() / (math.log(2) * x.shape.numel())
+                loss_sum2 += loss2.detach().cpu().item() * batch_size
+
+                loss3 = -1.0 * self.model.approximate_mixture_log_prob(x, context).sum() / (math.log(2) * x.shape.numel())
+                loss_sum3 += loss3.detach().cpu().item() * batch_size
+
+                loss_count += batch_size
+                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f} {:.3f} {:.3f}'.format(
+                    self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count, loss_sum2/loss_count, loss_sum3/loss_count), end='\r')
+            print('')
+        return {'bpd': loss_sum/loss_count}
+
+
+    def _eval_fn(self, epoch):
         self.model.eval()
         with torch.no_grad():
             loss_sum = 0.0
@@ -105,16 +139,19 @@ class BoostedFlowExperiment(FlowExperiment):
             loss_sum3 = 0.0
             loss_count = 0
             for x in self.eval_loader:
-                loss = -1.0 * self.model.mult_mixture_log_prob(x.to(self.args.device)).sum() / (math.log(2) * x.shape.numel())
-                loss_sum += loss.detach().cpu().item() * len(x)
+                batch_size = len(x)
+                x.to(self.args.device)
 
-                loss2 = -1.0 * self.model.add_mixture_log_prob(x.to(self.args.device)).sum() / (math.log(2) * x.shape.numel())
-                loss_sum2 += loss2.detach().cpu().item() * len(x)
+                loss = -1.0 * self.model.mult_mixture_log_prob(x).sum() / (math.log(2) * x.shape.numel())
+                loss_sum += loss.detach().cpu().item() * batch_size
 
-                loss3 = -1.0 * self.model.approximate_mixture_log_prob(x.to(self.args.device)).sum() / (math.log(2) * x.shape.numel())
-                loss_sum3 += loss3.detach().cpu().item() * len(x)
+                loss2 = -1.0 * self.model.add_mixture_log_prob(x).sum() / (math.log(2) * x.shape.numel())
+                loss_sum2 += loss2.detach().cpu().item() * batch_size
 
-                loss_count += len(x)
+                loss3 = -1.0 * self.model.approximate_mixture_log_prob(x).sum() / (math.log(2) * x.shape.numel())
+                loss_sum3 += loss3.detach().cpu().item() * batch_size
+
+                loss_count += batch_size
                 print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f} {:.3f} {:.3f}'.format(
                     self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count, loss_sum2/loss_count, loss_sum3/loss_count), end='\r')
             print('')
@@ -123,7 +160,7 @@ class BoostedFlowExperiment(FlowExperiment):
     # def log_epoch(self, title, loss_count, data_count, loss_sum):
     #     print('{}. Component: {}/{}, Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(
     #         title, self.model.component + 1, self.num_components, self.current_epoch+1, self.args.epochs, loss_count, data_count, loss_sum/loss_count), end='\r')
-
+    
     def sample_fn(self):
         if self.args.samples < 1:
             return
@@ -132,21 +169,45 @@ class BoostedFlowExperiment(FlowExperiment):
 
         path_check = '{}/check/checkpoint.pt'.format(self.log_path)
         checkpoint = torch.load(path_check)
+        
+        # get a batch of data and save the input images
+        batch = next(iter(self.eval_loader))
 
+        if self.args.flow in ['sr', 'conditional']:
+            imgs = batch[0][:self.args.samples]
+            context = batch[1][:self.args.samples]
+            self._cond_sample_fn(context, checkpoint)
+        else:
+            imgs = batch[:self.args.samples]
+            self._sample_fn(checkpoint)
+
+        # save real samples
+        path_true_samples = '{}/samples/true_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
+        self.save_images(imgs, path_true_samples)
+
+    def _cond_sample_fn(self, context, checkpoint):
+        if self.args.flow == 'sr':
+            # save low-resolution samples
+            path_context = '{}/samples/context_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
+            self.save_images(context, path_context)
+
+        # save samples from each component
         for c in range(self.num_components):
             path_samples = '{}/samples/sample_ep{}_s{}_c{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed, c)
-            if not os.path.exists(os.path.dirname(path_samples)):
-                os.mkdir(os.path.dirname(path_samples))
-
-            # save model samples
-            samples = self.model.sample(self.args.samples, component=c).cpu().float() / (2**self.args.num_bits - 1)
-            vutils.save_image(samples, path_samples, nrow=self.args.nrow)
+            #samples = self.model.sample(context.to(self.args.device), component=c).cpu().float() / (2**self.args.num_bits - 1)
+            #vutils.save_image(samples, path_samples, nrow=self.args.nrow)
+            samples = self.model.sample(context.to(self.args.device), component=c)
+            self.save_images(samples, path_samples)
+            
+    def _sample_fn(self, checkpoint):
+        # save samples from each component
+        for c in range(self.num_components):
+            path_samples = '{}/samples/sample_ep{}_s{}_c{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed, c)
+            #samples = self.model.sample(self.args.samples, component=c).cpu().float() / (2**self.args.num_bits - 1)
+            #vutils.save_image(samples, path_samples, nrow=self.args.nrow)
+            samples = self.model.sample(self.args.samples, component=c)
+            self.save_images(samples, path_samples)
                 
-        # save real samples too
-        path_true_samples = '{}/samples/true_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
-        imgs = next(iter(self.eval_loader))[:self.args.samples]
-        vutils.save_image(imgs.cpu().float(), path_true_samples, nrow=self.args.nrow)
-
     def init_component(self):
         self.best_loss = np.inf
         self.best_loss_epoch = 0

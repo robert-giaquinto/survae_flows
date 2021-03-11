@@ -6,3 +6,4 @@ from .cond_inverse_flow import ConditionalInverseFlow
 
 from .ndp_flow import NDPFlow
 from .boosted_flow import BoostedFlow
+from .cond_boosted_flow import ConditionalBoostedFlow

@@ -64,7 +64,6 @@ class CondPoolFlow(ConditionalFlow):
                                      current_shape[1] // 2,
                                      current_shape[2] // 2)
                 else:
-                
                     if pooling == 'slice':
                         noise_shape = (current_shape[0] * 2,
                                        current_shape[1] // 2,

@@ -40,13 +40,13 @@ with open(path_args, 'rb') as f:
 ## Specify data ##
 ##################
 
-_, eval_loader, data_shape = get_data(args)
+_, eval_loader, data_shape, cond_shape = get_data(args)
 
 ###################
 ## Specify model ##
 ###################
 
-model = get_model(args, data_shape=data_shape)
+model = get_model(args, data_shape=data_shape, cond_shape=cond_shape)
 if args.parallel == 'dp':
     model = DataParallelDistribution(model)
 checkpoint = torch.load(path_check)
@@ -66,10 +66,28 @@ model = model.to(device)
 model = model.eval()
 if eval_args.double: model = model.double()
 
-samples = model.sample(eval_args.samples).cpu().float() / (2**args.num_bits - 1)
-vutils.save_image(samples, path_samples, nrow=eval_args.nrow)
+# save model samples
+batch = next(iter(eval_loader))
+if args.flow in ['sr', 'conditional']:
+    imgs = batch[0][:eval_args.samples]
+    context = batch[1][:eval_args.samples]
+    samples = model.sample(context.to(device)).cpu().float() / (2**args.num_bits - 1)
 
-# save real images too
+    # save low-resolution samples too
+    path_context_samples = '{}/samples/context_ep{}_s{}.png'.format(eval_args.model, checkpoint['current_epoch'], eval_args.seed)
+    context = context.cpu().float()
+    if context.max().item() > 2:
+        context /= (2**args.num_bits - 1)
+    vutils.save_image(context, path_context_samples, nrow=eval_args.nrow)
+else:
+    samples = model.sample(eval_args.samples).cpu().float() / (2**args.num_bits - 1)
+    imgs = batch[:eval_args.samples]
+    
+vutils.save_image(samples, path_samples, nrow=eval_args.nrow)
+                
+# save real samples too
 path_true_samples = '{}/samples/true_ep{}_s{}.png'.format(eval_args.model, checkpoint['current_epoch'], eval_args.seed)
-imgs = next(iter(eval_loader))[:eval_args.samples]
-vutils.save_image(imgs.cpu().float(), path_true_samples, nrow=eval_args.nrow)
+imgs = imgs.cpu().float()
+if imgs.max().item() > 2:
+    imgs /= (2**args.num_bits - 1)
+vutils.save_image(imgs, path_true_samples, nrow=eval_args.nrow)

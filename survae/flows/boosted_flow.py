@@ -8,7 +8,7 @@ from survae.flows import Flow
 
 class BoostedFlow(Distribution):
     """
-    Base class for Flow.
+    Base class for gradient boosted normalizing flows.
     Flows use the forward transforms to transform data to noise.
     The inverse transforms can subsequently be used for sampling.
     These are typically useful as generative models of data.
@@ -17,13 +17,8 @@ class BoostedFlow(Distribution):
     def __init__(self, flows, args):
         super(BoostedFlow, self).__init__()
 
-        #assert isinstance(base_dist, Distribution)
-        #self.base_dist = base_dist
-
         assert isinstance(flows, Iterable)
-        #assert all(isinstance(flow, Iterable) for flow in flows)
         assert len(flows) == args.boosted_components, f"len(flows)={len(flows)} and args.boosted_components={args.boosted_components}"
-        #self.flows = nn.ModuleList([Flow(base_dist, transforms) for transforms in flows])
         self.flows = nn.ModuleList(flows)
         
         self.num_components = args.boosted_components
@@ -41,7 +36,7 @@ class BoostedFlow(Distribution):
                 1.0 / torch.pow(2.0, self.FloatTensor(self.num_components).fill_(0.0) + \
                                 torch.arange(self.num_components * 1.0, device=args.device)), min=0.05).to(args.device))
         else:
-            # args.rho_init == "uniform"
+            # model weight rho are uniformly weighted
             self.register_buffer('rho', self.FloatTensor(self.num_components).fill_(1.0 / self.num_components))
 
     def log_prob(self, x):

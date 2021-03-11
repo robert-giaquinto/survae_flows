@@ -287,28 +287,50 @@ class FlowExperiment(BaseExperiment):
 
         path_check = '{}/check/checkpoint.pt'.format(self.log_path)
         checkpoint = torch.load(path_check)
-
-        path_samples = '{}/samples/sample_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
-        if not os.path.exists(os.path.dirname(path_samples)):
-            os.mkdir(os.path.dirname(path_samples))
-
-        # save model samples
+        
+        # get a batch of data and save the input images
         batch = next(iter(self.eval_loader))
+
         if self.args.flow in ['sr', 'conditional']:
             imgs = batch[0][:self.args.samples]
             context = batch[1][:self.args.samples]
-            path_context_samples = '{}/samples/context_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
-            vutils.save_image(context.cpu().float(), path_context_samples, nrow=self.args.nrow)
-            samples = self.model.sample(context.to(self.args.device)).cpu().float() / (2**self.args.num_bits - 1)
+            self._cond_sample_fn(context, checkpoint)
         else:
-            samples = self.model.sample(self.args.samples).cpu().float() / (2**self.args.num_bits - 1)
             imgs = batch[:self.args.samples]
+            self._sample_fn(checkpoint)
 
-        vutils.save_image(samples, path_samples, nrow=self.args.nrow)
-                
-        # save real samples too
+        # save real samples
         path_true_samples = '{}/samples/true_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
-        vutils.save_image(imgs.cpu().float(), path_true_samples, nrow=self.args.nrow)
+        self.save_images(imgs, path_true_samples)
+
+    def _sample_fn(self, checkpoint):
+        path_samples = '{}/samples/sample_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
+        #samples = self.model.sample(self.args.samples).cpu().float() / (2**self.args.num_bits - 1)
+        #vutils.save_image(samples, path_samples, nrow=self.args.nrow)
+        samples = self.model.sample(self.args.samples)
+        self.save_images(samples, path_samples)
+
+    def _cond_sample_fn(self, context, checkpoint):
+        # save low-resolution samples
+        path_context = '{}/samples/context_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
+        self.save_images(context, path_context)
+
+        # save samples from model conditioned on context
+        path_samples = '{}/samples/sample_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
+        #samples = self.model.sample(context.to(self.args.device)).cpu().float() / (2**self.args.num_bits - 1)
+        #vutils.save_image(samples, path_samples, nrow=self.args.nrow)
+        samples = self.model.sample(context.to(self.args.device))
+        self.save_images(samples, path_samples)
+
+    def save_images(self, imgs, file_path):
+        if not os.path.exists(os.path.dirname(file_path)):
+            os.mkdir(os.path.dirname(file_path))
+        
+        out = imgs.cpu().float()
+        if out.max().item() > 2:
+            out /= (2**self.args.num_bits - 1)
+            
+        vutils.save_image(out, file_path, nrow=self.args.nrow)
 
     def stop_early(self, loss_dict, epoch):
         if self.args.early_stop == 0:

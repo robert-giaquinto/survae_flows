@@ -2,10 +2,8 @@ import torch
 import os
 
 from model.init_model import init_model
-from model.manifold_flow import ManifoldFlow
-from model.multilevel_flow import MultilevelFlow
-from model.pool_flow import PoolFlow
-from model.unconditional_gbnf import GBNF
+from model.gbnf import GBNF
+from model.cond_gbnf import ConditionalGBNF
 
 
 def add_model_args(parser):
@@ -28,6 +26,8 @@ def add_model_args(parser):
     parser.add_argument('--num_scales', type=int, default=2)
     parser.add_argument('--num_steps', type=int, default=1)
     parser.add_argument('--actnorm', type=eval, default=True)
+    parser.add_argument('--conditional_channels', nargs="*", type=int, default=[],
+                        help="Number of mid channels to use for conditional actnorm and invertible 1x1 convolutional layers")
 
     # dequantization parameters
     parser.add_argument('--dequant', type=str, default='uniform', choices=['uniform', 'flow', 'none'])
@@ -74,8 +74,11 @@ def get_model_id(args):
 def get_model(args, data_shape, cond_shape=None):
 
     if args.boosted_components > 1:
-        model = GBNF(data_shape=data_shape, num_bits=args.num_bits, args=args)
+        if args.flow == "sr":
+            model = ConditionalGBNF(data_shape=data_shape, cond_shape=cond_shape, num_bits=args.num_bits, args=args)
+        else:
+            model = GBNF(data_shape=data_shape, num_bits=args.num_bits, args=args)
     else:
-        model = init_model(args, data_shape, cond_shape)
+        model = init_model(args=args, data_shape=data_shape, cond_shape=cond_shape)
 
     return model

@@ -20,6 +20,7 @@ def init_model(args, data_shape, cond_shape=None):
                            num_scales=args.num_scales,
                            num_steps=args.num_steps,
                            actnorm=args.actnorm,
+                           conditional_channels=args.conditional_channels,
                            pooling="none",
                            dequant=args.dequant,
                            dequant_steps=args.dequant_steps,

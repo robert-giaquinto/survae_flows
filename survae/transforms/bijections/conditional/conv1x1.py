@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from survae.transforms.bijections.conditional import ConditionalBijection
 from survae.nn.layers import LinearZeros, LinearNorm, Conv2dResize
+from survae.nn.nets import Conv2Flat
 
 
 class ConditionalConv1x1(ConditionalBijection):
@@ -17,8 +18,7 @@ class ConditionalConv1x1(ConditionalBijection):
 
     Args:
         cond_shape (tensor): Shape of context input.
-        num_channels (int): Number of channels in the input and output.
-        orthogonal_init (bool): If True, initialize weights to be a random orthogonal matrix (default=True).
+        out_channels (int): Number of channels in the output.
         slogdet_cpu (bool): If True, compute slogdet on cpu (default=True).
 
     Note:
@@ -28,37 +28,24 @@ class ConditionalConv1x1(ConditionalBijection):
     References:
         [1] Structured Output Learning with Conditional Generative Flows
             You Lou & Bert Huang, 2020, https://arxiv.org/pdf/1905.13288.pdf
-
-    TODO: Currently only set up to for MNIST, the input and output sizes need to be more dynamic.
+        [2] Structured Output Learning with Conditional Generative Flows
+            You Lu & Bert Huang, 2020, https://arxiv.org/abs/1905.13288
     """
-    def __init__(self, cond_shape, num_channels, orthogonal_init=True, slogdet_cpu=True):
+    def __init__(self, cond_shape, out_channels, slogdet_cpu=True, mid_channels=[32], norm=True):
         super(ConditionalConv1x1, self).__init__()
-        self.num_channels = num_channels
+        self.out_channels = out_channels
         self.slogdet_cpu = slogdet_cpu
 
-        #cond_channels = 256
-        cond_channels = 64
-        cond_size = 128
-        C_cond, H_cond, W_cond = cond_shape
-
         # conditioning network
-        self.cond_net = nn.Sequential(
-            Conv2dResize(in_size=[C_cond, H_cond, W_cond], out_size=[cond_channels, H_cond//2, W_cond//2]),
-            nn.ReLU(),
-            Conv2dResize(in_size=[cond_channels, H_cond//2, W_cond//2], out_size=[cond_channels * 2, H_cond//7, W_cond//7]),
-            # Conv2dResize(in_size=[cond_channels, H_cond//2, W_cond//2], out_size=[cond_channels * 2, H_cond//4, W_cond//4]),
-            # nn.ReLU(),
-            # Conv2dResize(in_size=[cond_channels * 2, H_cond//4, W_cond//4], out_size=[cond_channels * 4, H_cond//8, W_cond//8]),
-            nn.ReLU()
-        )
-
+        self.cond_net = Conv2Flat(in_channels=cond_shape[0],
+                                  out_channels=out_channels * out_channels,
+                                  mid_channels=mid_channels,
+                                  max_pool=True,
+                                  batch_norm=norm)
         self.cond_linear = nn.Sequential(
-            # LinearZeros(cond_channels * 4 * H_cond * W_cond // (8*8), cond_size),
-            LinearZeros(cond_channels * 2 * H_cond * W_cond // (7*7), cond_size),
-            nn.ReLU(),
-            # LinearZeros(cond_size, cond_size),
-            # nn.ReLU(),
-            LinearNorm(cond_size, num_channels * num_channels),
+            #LinearZeros(out_channels * out_channels, out_channels * out_channels),
+            #nn.ReLU(),
+            LinearNorm(out_channels * out_channels, out_channels * out_channels),
             nn.Tanh()
         )
 
@@ -68,7 +55,7 @@ class ConditionalConv1x1(ConditionalBijection):
         context = self.cond_net(context)
         context = context.view(B, -1)
         context = self.cond_linear(context)
-        weight = context.view(B, self.num_channels, self.num_channels)
+        weight = context.view(B, self.out_channels, self.out_channels)
 
         if reverse == False:
             dimensions = x.size(2) * x.size(3)
@@ -77,10 +64,10 @@ class ConditionalConv1x1(ConditionalBijection):
             else:
                 logdet = torch.slogdet(weight)[1] * dimensions
 
-            weight = weight.view(B, self.num_channels, self.num_channels, 1, 1)
+            weight = weight.view(B, self.out_channels, self.out_channels, 1, 1)
             return weight, logdet.to(weight.device)
         else:
-            weight = torch.inverse(weight.double()).float().view(B, self.num_channels, self.num_channels, 1, 1)
+            weight = torch.inverse(weight.double()).float().view(B, self.out_channels, self.out_channels, 1, 1)
             return weight
 
     def forward(self, x, context):
