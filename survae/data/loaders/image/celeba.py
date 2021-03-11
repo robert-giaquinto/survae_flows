@@ -1,5 +1,5 @@
 from survae.data.datasets.image import SuperResolutionCelebADataset, UnsupervisedCelebADataset, SupervisedCelebADataset
-from torchvision.transforms import Compose, ToTensor
+from torchvision.transforms import Compose, ToTensor, Resize
 from survae.data.transforms import Quantize
 from survae.data import TrainValidTestLoader, DATA_PATH
 
