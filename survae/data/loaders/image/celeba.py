@@ -13,7 +13,7 @@ class CelebA32(TrainValidTestLoader):
     (Dinh et al., 2017): https://arxiv.org/abs/1605.08803
     '''
 
-    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False):
+    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
 
         self.root = root
         self.input_size = [3, 32, 32]
@@ -47,7 +47,7 @@ class CelebA64(TrainValidTestLoader):
     (Dinh et al., 2017): https://arxiv.org/abs/1605.08803
     '''
 
-    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False):
+    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
 
         self.root = root
         self.input_size = [3, 64, 64]
