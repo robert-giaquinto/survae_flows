@@ -44,7 +44,7 @@ class ContextInit(nn.Module):
         context, _ = self.shift(context)
         if self.encode:
             context = self.encode(context)
-        if sef.upsample:
+        if self.upsample:
             context = self.upsample(context)
             
         return context
