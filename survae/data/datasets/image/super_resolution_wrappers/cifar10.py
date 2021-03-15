@@ -21,7 +21,5 @@ class SuperResolutionCIFAR10Dataset(CIFAR10):
             tuple: (image, target) where target is index of the target class.
         """
         hr, _ = super(SuperResolutionCIFAR10Dataset, self).__getitem__(index)
-        # use interpolate to resize data since the data is already in tensor form (not images)
-        #lr = F.interpolate(hr, size=(14,14))
         lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
         return (hr, lr)

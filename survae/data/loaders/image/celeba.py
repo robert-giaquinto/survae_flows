@@ -19,8 +19,8 @@ class CelebA32(TrainValidTestLoader):
         self.input_size = [3, 32, 32]
         self.y_classes = 40
 
-        trans_train = pil_transforms + [ToTensor(), Resize(self.input_size[1:]), Quantize(num_bits)]
-        trans_test = [ToTensor(), Resize(self.input_size[1:]), Quantize(num_bits)]
+        trans_train = pil_transforms + [Resize(self.input_size[1:]), ToTensor(), Quantize(num_bits)]
+        trans_test = [Resize(self.input_size[1:]), ToTensor(), Quantize(num_bits)]        
 
         # Load data
         if super_resolution:
@@ -53,8 +53,8 @@ class CelebA64(TrainValidTestLoader):
         self.input_size = [3, 64, 64]
         self.y_classes = 40
 
-        trans_train = pil_transforms + [ToTensor(), Resize(self.input_size[1:]), Quantize(num_bits)]
-        trans_test = [ToTensor(), Resize(self.input_size[1:]), Quantize(num_bits)]
+        trans_train = pil_transforms + [Resize(self.input_size[1:]), ToTensor(), Quantize(num_bits)]
+        trans_test = [Resize(self.input_size[1:]), ToTensor(), Quantize(num_bits)]
 
         # Load data
         if super_resolution:

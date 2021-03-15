@@ -8,22 +8,22 @@ from PIL import Image
 from survae.data import DATA_PATH
 
 
-class ImageNet32Dataset(data.Dataset):
+class UnsupervisedImageNet64Dataset(data.Dataset):
     """
     The ImageNet dataset of
     (Russakovsky et al., 2015): https://arxiv.org/abs/1409.0575
-    downscaled to 32x32, as used in
+    downscaled to 64x64, as used in
     (van den Oord et al., 2016): https://arxiv.org/abs/1601.06759
     """
 
     urls = [
-        'http://image-net.org/small/train_32x32.tar',
-        'http://image-net.org/small/valid_32x32.tar'
+        'http://image-net.org/small/train_64x64.tar',
+        'http://image-net.org/small/valid_64x64.tar'
     ]
-    raw_folder = 'imagenet32/raw'
-    processed_folder = 'imagenet32/processed'
-    train_folder = 'train_32x32'
-    valid_folder = 'valid_32x32'
+    raw_folder = 'imagenet64/raw'
+    processed_folder = 'imagenet64/processed'
+    train_folder = 'train_64x64'
+    valid_folder = 'valid_64x64'
 
     def __init__(self, root=DATA_PATH, train=True, transform=None, download=False):
         self.root = os.path.expanduser(root)

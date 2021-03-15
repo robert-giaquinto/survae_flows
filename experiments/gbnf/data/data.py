@@ -32,11 +32,9 @@ def get_data(args):
     data_shape = get_data_shape(args.dataset)
     pil_transforms = get_augmentation(args.augmentation, args.dataset, data_shape)
 
-    super_resolution = args.flow == "sr"
-    conditional = args.flow == "conditional"
-    if super_resolution:
+    if args.super_resolution:
         cond_shape = get_sr_shape(args.dataset, args.sr_scale_factor)
-    elif conditional:
+    elif args.conditional:
         cond_shape = get_label_shape(args.dataset)
     else:
         cond_shape = None
@@ -44,24 +42,25 @@ def get_data(args):
     if args.dataset == 'binary_mnist':
         dataset = DynamicallyBinarizedMNIST()
     elif args.dataset == 'mnist':
-        dataset = MNIST(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution, sr_scale_factor=args.sr_scale_factor)
+        dataset = MNIST(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
     elif args.dataset == 'cifar10':
-        dataset = CIFAR10(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution, sr_scale_factor=args.sr_scale_factor)
+        dataset = CIFAR10(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
     elif args.dataset == 'imagenet32':
-        dataset = ImageNet32(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution)
+        dataset = ImageNet32(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
     elif args.dataset == 'imagenet64':
-        dataset = ImageNet64(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution)
+        dataset = ImageNet64(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
     elif args.dataset == 'svhn':
-        dataset = SVHN(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution)
+        dataset = SVHN(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
     elif args.dataset == 'celeba32':
-        dataset = CelebA32(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution, sr_scale_factor=args.sr_scale_factor)
+        dataset = CelebA32(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
     elif args.dataset == 'celeba64':
-        dataset = CelebA64(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=conditional, super_resolution=super_resolution, sr_scale_factor=args.sr_scale_factor)
+        dataset = CelebA64(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
     else:
         raise ValueError(f"{dataset} is an unrecognized dataset.")
 
     # Data Loader
-    train_loader, test_loader = dataset.get_data_loaders(batch_size=args.batch_size, pin_memory=args.pin_memory, num_workers=args.num_workers)
+    loaders = dataset.get_data_loaders(batch_size=args.batch_size, pin_memory=args.pin_memory, num_workers=args.num_workers)
+    train_loader, test_loader = loaders[0], loaders[-1]
 
     return train_loader, test_loader, data_shape, cond_shape
 
@@ -99,8 +98,8 @@ def get_data_shape(dataset):
         data_shape = (3,32,32)
     elif dataset == 'celeba32':
         data_shape = (3,32,32)
-    elif dataset == 'celeba32':
-        data_shape = (3,32,32)
+    elif dataset == 'celeba64':
+        data_shape = (3,64,64)
     else:
         raise ValueError(f"{dataset} is an unrecognized dataset.")
         

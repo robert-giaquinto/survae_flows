@@ -1,5 +1,5 @@
 import os
-from survae.data.datasets.image import UnsupervisedSVHNDataset, SupervisedSVHNDataset
+from survae.data.datasets.image import UnsupervisedSVHNDataset, SupervisedSVHNDataset, SuperResolutionSVHNDataset
 from torchvision.transforms import Compose, ToTensor
 from survae.data.transforms import Quantize
 from survae.data import TrainTestLoader, DATA_PATH
@@ -11,7 +11,7 @@ class SVHN(TrainTestLoader):
     https://research.google/pubs/pub37648/
     '''
 
-    def __init__(self, root=DATA_PATH, download=True, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False):
+    def __init__(self, root=DATA_PATH, download=True, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
 
         self.root = root
 
@@ -22,7 +22,10 @@ class SVHN(TrainTestLoader):
         # Load data
         sub_root = os.path.join(root, 'SVHN')
 
-        if conditional:
+        if super_resolution:
+            self.train = SuperResolutionSVHNDataset(sub_root, split='train', transform=Compose(trans_train), download=download, sr_scale_factor=sr_scale_factor)
+            self.test = SuperResolutionSVHNDataset(sub_root, split='test', transform=Compose(trans_test), download=download, sr_scale_factor=sr_scale_factor)
+        elif conditional:
             self.train = SupervisedSVHNDataset(sub_root, split='train', transform=Compose(trans_train), download=download)
             self.test = SupervisedSVHNDataset(sub_root, split='test', transform=Compose(trans_test), download=download)
         else:

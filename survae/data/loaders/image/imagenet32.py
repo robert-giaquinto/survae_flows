@@ -1,4 +1,4 @@
-from survae.data.datasets.image import ImageNet32Dataset
+from survae.data.datasets.image import UnsupervisedImageNet32Dataset, SuperResolutionImageNet32Dataset
 from torchvision.transforms import Compose, ToTensor
 from survae.data.transforms import Quantize
 from survae.data import TrainTestLoader, DATA_PATH
@@ -12,7 +12,7 @@ class ImageNet32(TrainTestLoader):
     (van den Oord et al., 2016): https://arxiv.org/abs/1601.06759
     '''
 
-    def __init__(self, root=DATA_PATH, download=True, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False):
+    def __init__(self, root=DATA_PATH, download=True, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
 
         self.root = root
 
@@ -21,5 +21,9 @@ class ImageNet32(TrainTestLoader):
         trans_test = [ToTensor(), Quantize(num_bits)]
 
         # Load data
-        self.train = ImageNet32Dataset(root, train=True, transform=Compose(trans_train), download=download)
-        self.test = ImageNet32Dataset(root, train=False, transform=Compose(trans_test))
+        if super_resolution:
+            self.train = SuperResolutionImageNet32Dataset(root, train=True, transform=Compose(trans_train), download=download, sr_scale_factor=sr_scale_factor)
+            self.test = SuperResolutionImageNet32Dataset(root, train=False, transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
+        else:
+            self.train = UnsupervisedImageNet32Dataset(root, train=True, transform=Compose(trans_train), download=download)
+            self.test = UnsupervisedImageNet32Dataset(root, train=False, transform=Compose(trans_test))

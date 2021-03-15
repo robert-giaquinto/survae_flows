@@ -38,19 +38,6 @@ class Coupling(AffineCouplingBijection):
 
         super(Coupling, self).__init__(coupling_net=net, scale_fn=scale_fn("tanh_exp"))
 
-    # def _elementwise_forward(self, x, elementwise_params):
-    #     unconstrained_scale, shift = self._unconstrained_scale_and_shift(elementwise_params)
-    #     log_scale = 2. * torch.tanh(unconstrained_scale / 2.)
-    #     z = shift + torch.exp(log_scale) * x
-    #     ldj = sum_except_batch(log_scale)
-    #     return z, ldj
-
-    # def _elementwise_inverse(self, z, elementwise_params):
-    #     unconstrained_scale, shift = self._unconstrained_scale_and_shift(elementwise_params)
-    #     log_scale = 2. * torch.tanh(unconstrained_scale / 2.)
-    #     x = (z - shift) * torch.exp(-log_scale)
-    #     return x
-
 
 class MixtureCoupling(LogisticMixtureAffineCouplingBijection):
 
@@ -64,8 +51,6 @@ class MixtureCoupling(LogisticMixtureAffineCouplingBijection):
                                    ElementwiseParams2d(2 + num_mixtures * 3, mode='sequential'))
 
         super(MixtureCoupling, self).__init__(coupling_net=net, num_mixtures=num_mixtures, scale_fn=scale_fn("tanh_exp"))
-
-
 
 
 class ConditionalCoupling(ConditionalAffineCouplingBijection):
@@ -97,30 +82,18 @@ class ConditionalCoupling(ConditionalAffineCouplingBijection):
             
         super(ConditionalCoupling, self).__init__(coupling_net=net, scale_fn=scale_fn("tanh_exp"))
 
-    # def _elementwise_forward(self, x, elementwise_params):
-    #     unconstrained_scale, shift = self._unconstrained_scale_and_shift(elementwise_params)
-    #     log_scale = 2. * torch.tanh(unconstrained_scale / 2.)
-    #     z = shift + torch.exp(log_scale) * x
-    #     ldj = sum_except_batch(log_scale)
-    #     return z, ldj
-
-    # def _elementwise_inverse(self, z, elementwise_params):
-    #     unconstrained_scale, shift = self._unconstrained_scale_and_shift(elementwise_params)
-    #     log_scale = 2. * torch.tanh(unconstrained_scale / 2.)
-    #     x = (z - shift) * torch.exp(-log_scale)
-    #     return x
-
 
 class ConditionalMixtureCoupling(ConditionalLogisticMixtureAffineCouplingBijection):
 
-    def __init__(self, in_channels, num_context, mid_channels, num_mixtures, num_blocks, dropout):
+    def __init__(self, in_channels, num_context, mid_channels, num_mixtures, num_blocks, dropout, use_attn=True):
+        coupling_net = nn.Sequential(TransformerNet(in_channels // 2,
+                                                    context_channels=num_context,
+                                                    mid_channels=mid_channels,
+                                                    num_blocks=num_blocks,
+                                                    num_mixtures=num_mixtures,
+                                                    use_attn=use_attn,
+                                                    dropout=dropout),
+                                     ElementwiseParams2d(2 + num_mixtures * 3, mode='sequential'))
 
-        net = nn.Sequential(TransformerNet(in_channels // 2,
-                                           mid_channels=mid_channels,
-                                           context_channels=num_context,
-                                           num_blocks=num_blocks,
-                                           num_mixtures=num_mixtures,
-                                           dropout=dropout),
-                            ElementwiseParams2d(2 + num_mixtures * 3, mode='sequential'))
+        super(ConditionalMixtureCoupling, self).__init__(coupling_net=coupling_net, num_mixtures=num_mixtures, scale_fn=scale_fn("tanh_exp"))
 
-        super(ConditionalMixtureCoupling, self).__init__(coupling_net=net, num_mixtures=num_mixtures, scale_fn=scale_fn("tanh_exp"))

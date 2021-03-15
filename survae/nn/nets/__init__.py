@@ -3,3 +3,4 @@ from .conv import ConvNet, ResizeConvNet, GatedConvNet, ConvEncoderNet, ConvDeco
 from .autoregressive import *
 from .matching import *
 from .transformer import TransformerNet, ConvAttnBlock
+from .context_upsampler import ContextUpsampler, UpsamplerNet

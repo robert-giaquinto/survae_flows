@@ -27,30 +27,6 @@ class ConvNet(nn.Sequential):
         super(ConvNet, self).__init__(*layers)
 
 
-class ResizeConvNet(nn.Sequential):
-    """
-    Context convolution net used in the CondAffineCoupling of:
-    https://github.com/yolu1055/conditional-glow/blob/master/modules.py
-
-    - Resizes the input to the output size with convolutional layers
-    """
-    def __init__(self, in_size, out_size, mid_channels, activation='relu', in_lambda=None, out_lambda=None):
-
-        layers = []
-        if in_lambda: layers.append(LambdaLayer(in_lambda))
-        
-        layers.append(Conv2dZeros(in_size[0], mid_channels))
-        if activation is not None: layers.append(act_module(activation, allow_concat=False))
-        
-        layers.append(Conv2dResize(in_size=(mid_channels, in_size[1], in_size[2]), out_size=out_size))
-        if activation is not None: layers.append(act_module(activation, allow_concat=False))
-        
-        layers.append(Conv2dZeros(out_size[0], out_size[0]))
-        if out_lambda: layers.append(LambdaLayer(out_lambda))
-
-        super(ResizeConvNet, self).__init__(*layers)
-
-
 class GatedConvNet(nn.Sequential):
     """
     Gated convolutional neural network layer.
@@ -92,6 +68,30 @@ class ConvDecoderNet(nn.Sequential):
         super(ConvDecoderNet, self).__init__(*layers)
 
 
+class ResizeConvNet(nn.Sequential):
+    """
+    Context convolution net used in the CondAffineCoupling of:
+    https://github.com/yolu1055/conditional-glow/blob/master/modules.py
+
+    - Resizes the input to the output size with convolutional layers
+    """
+    def __init__(self, in_size, out_size, mid_channels, activation='relu', in_lambda=None, out_lambda=None):
+
+        layers = []
+        if in_lambda: layers.append(LambdaLayer(in_lambda))
+        
+        layers.append(Conv2dZeros(in_size[0], mid_channels))
+        if activation is not None: layers.append(act_module(activation, allow_concat=False))
+        
+        layers.append(Conv2dResize(in_size=(mid_channels, in_size[1], in_size[2]), out_size=out_size))
+        if activation is not None: layers.append(act_module(activation, allow_concat=False))
+        
+        layers.append(Conv2dZeros(out_size[0], out_size[0]))
+        if out_lambda: layers.append(LambdaLayer(out_lambda))
+
+        super(ResizeConvNet, self).__init__(*layers)
+
+
 class _Network(nn.Module):
     """
     Simple neural network base class with specific intializations
@@ -118,7 +118,7 @@ class _Network(nn.Module):
 
 class _ConvDecoder(_Network):
     """
-    Convolutional encoder for use with a variational autoencoder
+    Convolutional decoder for use with a variational autoencoder
     Only to be called by ConvEncoderNet.
 
     Uses transposed convolutions to increase the spatial dimensions of the input back to the 
@@ -127,8 +127,11 @@ class _ConvDecoder(_Network):
     def __init__(self, in_channels, out_shape, mid_channels, batch_norm, init_weights=True):
         super(_ConvDecoder, self).__init__()
 
-        feature_layers = []
-        for in_size, out_size in zip([in_channels] + mid_channels[:-1], mid_channels):
+        compressed_input = (in_channels + mid_channels[0]) // 4
+        feature_layers = [nn.Conv2d(in_channels, compressed_input, kernel_size=1, stride=1)]
+        if batch_norm: feature_layers.append(nn.BatchNorm2d(compressed_input))
+        feature_layers.append(nn.ReLU(inplace=True))
+        for in_size, out_size in zip([compressed_input] + mid_channels[:-1], mid_channels):
             feature_layers.append(nn.ConvTranspose2d(in_size, out_size, kernel_size=3, stride=2, padding=0))
             if batch_norm: feature_layers.append(nn.BatchNorm2d(out_size))
             feature_layers.append(nn.ReLU(inplace=True))
@@ -153,7 +156,7 @@ class Conv2Flat(_Network):
     (see _ConvEncoder for the full module to be used in the VAE).
     This can be used as a convolution network anytime the input needs to be transformed to a flat vector.
     """
-    def __init__(self, in_channels, out_channels, mid_channels, max_pool, batch_norm, init_weights=True):
+    def __init__(self, in_channels, out_channels, mid_channels, max_pool, batch_norm=True, init_weights=True):
         super(Conv2Flat, self).__init__()
 
         feature_layers = []
@@ -189,7 +192,9 @@ class _ConvEncoder(_Network):
     """
     def __init__(self, in_channels, out_channels, mid_channels, max_pool, batch_norm, init_weights=True):
         super(_ConvEncoder, self).__init__()
-        self.encode = Conv2Flat(in_channels, out_channels * 2, mid_channels, max_pool, batch_norm, init_weights)
+        self.encode = Conv2Flat(in_channels, out_channels, mid_channels, max_pool, batch_norm, init_weights)
+        self.dense = nn.Sequential(nn.ReLU(inplace=True),
+                                     nn.Conv2d(out_channels, out_channels * 2, kernel_size=1, stride=1))
         self.var_activation = nn.Sequential(nn.Softplus(), nn.Hardtanh(min_val=0.01, max_val=7.0))
 
         if init_weights:
@@ -197,17 +202,11 @@ class _ConvEncoder(_Network):
         
     def forward(self, x):
         hidden = self.encode(x)
+        hidden = self.dense(hidden)
         mean, var = hidden.chunk(2, dim=1)
         log_var = self.var_activation(var)
         out = torch.cat((mean, log_var), dim=1)
         return out
-
-
-
-
-
-
-
 
 
 

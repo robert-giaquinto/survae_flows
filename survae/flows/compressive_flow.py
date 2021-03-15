@@ -5,9 +5,9 @@ from survae.distributions import Distribution
 from survae.transforms import Transform
 
 
-class NDPFlow(Distribution):
+class CompressiveFlow(Distribution):
     """
-    Base class for Non-Dimension Preserving Flow.
+    Base class for non-dimension preserving / Compressive Normalizing Flow.
 
     Flows use the forward transforms to transform data to noise.
     The inverse transforms can subsequently be used for sampling.
@@ -23,7 +23,7 @@ class NDPFlow(Distribution):
     """
 
     def __init__(self, base_dist, transforms):
-        super(NDPFlow, self).__init__()
+        super(CompressiveFlow, self).__init__()
         assert isinstance(base_dist, Iterable)
         assert all(base is None or isinstance(base, Distribution) for base in base_dist)
 

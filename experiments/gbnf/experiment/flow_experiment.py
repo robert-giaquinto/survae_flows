@@ -69,12 +69,13 @@ class FlowExperiment(BaseExperiment):
         if args.project is None:
             args.project = '_'.join([data_id, model_id])
 
+        arch_id = f"{args.coupling_network}_coupling_scales{args.num_scales}_steps{args.num_steps}"
         if args.name == "debug":
             log_path = os.path.join(
-                self.log_base, "debug", data_id, model_id, optim_id, f"seed{args.seed}", time.strftime("%Y-%m-%d_%H-%M-%S"))
+                self.log_base, "debug", data_id, model_id, arch_id, optim_id, f"seed{args.seed}", time.strftime("%Y-%m-%d_%H-%M-%S"))
         else:
             log_path = os.path.join(
-                self.log_base, data_id, model_id, optim_id, f"seed{args.seed}", args.name)
+                self.log_base, data_id, model_id, arch_id, optim_id, f"seed{args.seed}", args.name)
 
         # Move model
         model = model.to(args.device)
@@ -181,19 +182,24 @@ class FlowExperiment(BaseExperiment):
 
     def _train_amp(self, epoch):
         """
-        Same training procedure, but uses half precision to speed up training on GPUs
-
-        NOTE: Not currently implemented, this only runs on the latest pytorch versions
-              so I'm leaving this out for now.
+        Same training procedure, but uses half precision to speed up training on GPUs.
+        Only works on SOME GPUs and the latest version of Pytorch.
         """
         self.model.train()
         loss_sum = 0.0
         loss_count = 0
         for x in self.train_loader:
 
+            if isinstance(x, list) or isinstance(x, tuple):
+                batch_size = len(x[0])
+                x = (x[0].to(self.args.device), x[1].to(self.args.device))
+            else:
+                batch_size = len(x)
+                x.to(self.args.device)
+
             # Cast operations to mixed precision
             with torch.cuda.amp.autocast():
-                loss = elbo_bpd(self.model, x.to(self.args.device))
+                loss = elbo_bpd(self.model, x)
 
             # Scale loss and call backward() to create scaled gradients
             self.scaler.scale(loss).backward()
@@ -213,8 +219,8 @@ class FlowExperiment(BaseExperiment):
             self.optimizer.zero_grad(set_to_none=True)
 
             # accumulate loss and report
-            loss_sum += loss.detach().cpu().item() * len(x)
-            loss_count += len(x)
+            loss_sum += loss.detach().cpu().item() * batch_size
+            loss_count += batch_size
             self.log_epoch("Training", loss_count, len(self.train_loader.dataset), loss_sum)
 
         print('')
@@ -233,7 +239,6 @@ class FlowExperiment(BaseExperiment):
             if isinstance(x, list) or isinstance(x, tuple):
                 batch_size = len(x[0])
                 x = (x[0].to(self.args.device), x[1].to(self.args.device))
-                #x = (data.to(self.args.device) for data in  x)
             else:
                 batch_size = len(x)
                 x.to(self.args.device)
@@ -291,7 +296,7 @@ class FlowExperiment(BaseExperiment):
         # get a batch of data and save the input images
         batch = next(iter(self.eval_loader))
 
-        if self.args.flow in ['sr', 'conditional']:
+        if self.args.super_resolution or args.conditional:
             imgs = batch[0][:self.args.samples]
             context = batch[1][:self.args.samples]
             self._cond_sample_fn(context, checkpoint)

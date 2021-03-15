@@ -1,9 +1,9 @@
 import torch
 import os
 
-from model.linear_manifold_flow import LinearManifoldFlow
-from model.manifold_flow import ManifoldFlow
-from model.multilevel_flow import MultilevelFlow
+from model.linear_compressive_flow import LinearCompressiveFlow
+from model.vae_compressive_flow import VAECompressiveFlow
+from model.multilevel_compressive_flow import MultilevelCompressiveFlow
 from model.pool_flow import PoolFlow
 from model.pretrained_flow import PretrainedFlow
 from model.compress_pretrained import CompressPretrained
@@ -126,16 +126,37 @@ def get_model(args, data_shape, cond_shape=None):
     elif args.compression == "vae":
         
         if args.linear:
-            model = LinearManifoldFlow(data_shape=data_shape,
+            model = LinearCompressiveFlow(data_shape=data_shape,
+                                          num_bits=args.num_bits,
+                                          base_distributions=args.base_distributions,
+                                          num_scales=args.num_scales,
+                                          num_steps=args.num_steps,
+                                          actnorm=args.actnorm,
+                                          latent_size=args.latent_size,
+                                          trainable_sigma=args.trainable_sigma,
+                                          sigma_init=args.sigma_init,
+                                          stochastic_elbo=args.stochastic_elbo,
+                                          dequant=args.dequant,
+                                          dequant_steps=args.dequant_steps,
+                                          dequant_context=args.dequant_context,
+                                          coupling_network=args.coupling_network,
+                                          coupling_blocks=args.coupling_blocks,
+                                          coupling_channels=args.coupling_channels,
+                                          coupling_depth=args.coupling_depth,
+                                          coupling_growth=args.coupling_growth,
+                                          coupling_dropout=args.coupling_dropout,
+                                          coupling_gated_conv=args.coupling_gated_conv,
+                                          coupling_mixtures=args.coupling_mixtures)            
+        else:
+            model = VAECompressiveFlow(data_shape=data_shape,
                                        num_bits=args.num_bits,
                                        base_distributions=args.base_distributions,
                                        num_scales=args.num_scales,
                                        num_steps=args.num_steps,
                                        actnorm=args.actnorm,
+                                       vae_hidden_units=args.vae_hidden_units,
                                        latent_size=args.latent_size,
-                                       trainable_sigma=args.trainable_sigma,
-                                       sigma_init=args.sigma_init,
-                                       stochastic_elbo=args.stochastic_elbo,
+                                       vae_activation=args.vae_activation,
                                        dequant=args.dequant,
                                        dequant_steps=args.dequant_steps,
                                        dequant_context=args.dequant_context,
@@ -146,50 +167,29 @@ def get_model(args, data_shape, cond_shape=None):
                                        coupling_growth=args.coupling_growth,
                                        coupling_dropout=args.coupling_dropout,
                                        coupling_gated_conv=args.coupling_gated_conv,
-                                       coupling_mixtures=args.coupling_mixtures)            
-        else:
-            model = ManifoldFlow(data_shape=data_shape,
-                                 num_bits=args.num_bits,
-                                 base_distributions=args.base_distributions,
-                                 num_scales=args.num_scales,
-                                 num_steps=args.num_steps,
-                                 actnorm=args.actnorm,
-                                 vae_hidden_units=args.vae_hidden_units,
-                                 latent_size=args.latent_size,
-                                 vae_activation=args.vae_activation,
-                                 dequant=args.dequant,
-                                 dequant_steps=args.dequant_steps,
-                                 dequant_context=args.dequant_context,
-                                 coupling_network=args.coupling_network,
-                                 coupling_blocks=args.coupling_blocks,
-                                 coupling_channels=args.coupling_channels,
-                                 coupling_depth=args.coupling_depth,
-                                 coupling_growth=args.coupling_growth,
-                                 coupling_dropout=args.coupling_dropout,
-                                 coupling_gated_conv=args.coupling_gated_conv,
-                                 coupling_mixtures=args.coupling_mixtures)
-            
+                                       coupling_mixtures=args.coupling_mixtures)
+        
     elif args.compression == "mvae":
-        model = MultilevelFlow(data_shape=data_shape,
-                               num_bits=args.num_bits,
-                               base_distributions=args.base_distributions,
-                               num_scales=args.num_scales,
-                               num_steps=args.num_steps,
-                               actnorm=args.actnorm,
-                               vae_hidden_units=args.vae_hidden_units,
-                               vae_activation=args.vae_activation,
-                               dequant=args.dequant,
-                               dequant_steps=args.dequant_steps,
-                               dequant_context=args.dequant_context,
-                               coupling_network=args.coupling_network,
-                               coupling_blocks=args.coupling_blocks,
-                               coupling_channels=args.coupling_channels,
-                               coupling_depth=args.coupling_depth,
-                               coupling_growth=args.coupling_growth,
-                               coupling_dropout=args.coupling_dropout,
-                               coupling_gated_conv=args.coupling_gated_conv,
-                               coupling_mixtures=args.coupling_mixtures)
-
+        model = MultilevelCompressiveFlow(data_shape=data_shape,
+                                          num_bits=args.num_bits,
+                                          base_distributions=args.base_distributions,
+                                          num_scales=args.num_scales,
+                                          num_steps=args.num_steps,
+                                          actnorm=args.actnorm,
+                                          vae_hidden_units=args.vae_hidden_units,
+                                          vae_activation=args.vae_activation,
+                                          dequant=args.dequant,
+                                          dequant_steps=args.dequant_steps,
+                                          dequant_context=args.dequant_context,
+                                          coupling_network=args.coupling_network,
+                                          coupling_blocks=args.coupling_blocks,
+                                          coupling_channels=args.coupling_channels,
+                                          coupling_depth=args.coupling_depth,
+                                          coupling_growth=args.coupling_growth,
+                                          coupling_dropout=args.coupling_dropout,
+                                          coupling_gated_conv=args.coupling_gated_conv,
+                                          coupling_mixtures=args.coupling_mixtures)
+        
             
     elif args.compression in ["max", "slice", "none"]:
         

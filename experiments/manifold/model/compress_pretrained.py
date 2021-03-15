@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from survae.flows import NDPFlow
+from survae.flows import CompressiveFlow
 from survae.transforms import VAE, Reshape
 from survae.transforms import UniformDequantization, VariationalDequantization
 from survae.transforms import AffineCouplingBijection, ScalarAffineBijection
@@ -14,7 +14,7 @@ from .dequantization_flow import DequantizationFlow
 from .coupling import Coupling, MixtureCoupling
 
 
-class CompressPretrained(NDPFlow):
+class CompressPretrained(CompressiveFlow):
 
     def __init__(self, pretrained_model, latent_size):
         self.flow_shape = pretrained_model.base_dist.shape

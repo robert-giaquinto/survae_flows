@@ -98,7 +98,7 @@ class BoostedFlowExperiment(FlowExperiment):
         self.sample_fn()
 
     def eval_fn(self, epoch):
-        if self.args.flow in ['sr', 'conditional']:
+        if self.args.super_resolution or self.args.conditional:
             return self._cond_eval_fn(epoch)
         else:
             return self._eval_fn(epoch)
@@ -173,7 +173,7 @@ class BoostedFlowExperiment(FlowExperiment):
         # get a batch of data and save the input images
         batch = next(iter(self.eval_loader))
 
-        if self.args.flow in ['sr', 'conditional']:
+        if self.args.super_resolution or args.conditional:
             imgs = batch[0][:self.args.samples]
             context = batch[1][:self.args.samples]
             self._cond_sample_fn(context, checkpoint)
@@ -186,32 +186,25 @@ class BoostedFlowExperiment(FlowExperiment):
         self.save_images(imgs, path_true_samples)
 
     def _cond_sample_fn(self, context, checkpoint):
-        if self.args.flow == 'sr':
-            # save low-resolution samples
+        if self.args.super_resolution:
             path_context = '{}/samples/context_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
             self.save_images(context, path_context)
 
         # save samples from each component
         for c in range(self.num_components):
             path_samples = '{}/samples/sample_ep{}_s{}_c{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed, c)
-            #samples = self.model.sample(context.to(self.args.device), component=c).cpu().float() / (2**self.args.num_bits - 1)
-            #vutils.save_image(samples, path_samples, nrow=self.args.nrow)
             samples = self.model.sample(context.to(self.args.device), component=c)
             self.save_images(samples, path_samples)
             
     def _sample_fn(self, checkpoint):
-        # save samples from each component
         for c in range(self.num_components):
             path_samples = '{}/samples/sample_ep{}_s{}_c{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed, c)
-            #samples = self.model.sample(self.args.samples, component=c).cpu().float() / (2**self.args.num_bits - 1)
-            #vutils.save_image(samples, path_samples, nrow=self.args.nrow)
             samples = self.model.sample(self.args.samples, component=c)
             self.save_images(samples, path_samples)
                 
     def init_component(self):
         self.best_loss = np.inf
         self.best_loss_epoch = 0
-
         for c in range(self.num_components):
             if c != self.model.component:
                 self.optimizer.param_groups[c]['lr'] = 0.0

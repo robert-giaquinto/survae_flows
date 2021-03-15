@@ -8,7 +8,7 @@ from PIL import Image
 from survae.data import DATA_PATH
 
 
-class ImageNet64Dataset(data.Dataset):
+class SuperResolutionImageNet64Dataset(data.Dataset):
     """
     The ImageNet dataset of
     (Russakovsky et al., 2015): https://arxiv.org/abs/1409.0575
@@ -25,10 +25,13 @@ class ImageNet64Dataset(data.Dataset):
     train_folder = 'train_64x64'
     valid_folder = 'valid_64x64'
 
-    def __init__(self, root=DATA_PATH, train=True, transform=None, download=False):
+    def __init__(self, root=DATA_PATH, train=True, transform=None, download=False, sr_scale_factor=4):
         self.root = os.path.expanduser(root)
         self.train = train
         self.transform = transform
+
+        assert isinstance(sr_scale_factor, int) and sr_scale_factor > 1
+        self.sr_scale_factor = sr_scale_factor
 
         if not self._check_raw():
             if download:
@@ -52,13 +55,13 @@ class ImageNet64Dataset(data.Dataset):
         Returns:
             tensor: image
         """
-
-        img = Image.open(self.files[index])
+        hr = Image.open(self.files[index])
 
         if self.transform is not None:
-            img = self.transform(img)
+            hr = self.transform(hr)
 
-        return img
+        lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+        return (hr, lr)
 
     def __len__(self):
         return len(self.files)

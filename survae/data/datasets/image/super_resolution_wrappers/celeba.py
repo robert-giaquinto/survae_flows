@@ -36,7 +36,7 @@ class SuperResolutionCelebADataset(data.Dataset):
     raw_folder = 'celeba/raw'
     processed_folder = 'celeba/processed'
 
-    def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=2):
+    def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4):
         super(SuperResolutionCelebADataset, self).__init__()
 
         assert split in {'train','valid','test'}
@@ -71,7 +71,7 @@ class SuperResolutionCelebADataset(data.Dataset):
         hr = self.data[index]
 
         if self.transform is not None:
-            hr = self.transform(img)
+            hr = self.transform(hr)
 
         lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
         return (hr, lr)
