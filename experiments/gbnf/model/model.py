@@ -21,7 +21,8 @@ def add_model_args(parser):
     parser.add_argument('--latent_size', type=int, default=196)
     parser.add_argument('--vae_hidden_units', nargs="*", type=int, default=[])
     parser.add_argument('--vae_activation', type=str, default='relu', choices=['relu', 'none' 'elu', 'gelu', 'swish'])
-    parser.add_argument('--compression_ratio', nargs="+", type=float, default=[0.5])
+    parser.add_argument('--compression_ratio', nargs="+", type=float, default=[0.5],
+                        help="Percent reduction to latent space at each scale (except final). Only applies to mvae and slice flows.")
 
     # boosting parameters
     parser.add_argument('--boosted_components', type=int, default=1)
@@ -37,9 +38,10 @@ def add_model_args(parser):
                         help="Number of mid channels to use for conditional actnorm and invertible 1x1 convolutional layers")
 
     # context init model of low-resolution images in super-image resolution
-    parser.add_argument('--lowres_encoder_channels', nargs="*", type=int, default=[0])
-    parser.add_argument('--lowres_encoder_depth', type=int, default=0)
-    parser.add_argument('--lowres_encoder_blocks', type=int, default=0)
+    parser.add_argument('--lowres_encoder_channels', type=int, default=0, help="Set to zero for no encoding of the low-resolution image")
+    parser.add_argument('--lowres_encoder_depth', type=int, default=0, help="Set to zero for no encoding of the low-resolution image")
+    parser.add_argument('--lowres_encoder_blocks', type=int, default=0, help="Set to zero for no encoding of the low-resolution image")
+    parser.add_argument('--lowres_upsampler_channels', nargs="+", type=int, default=[32])
 
     # dequantization parameters
     parser.add_argument('--dequant', type=str, default='uniform', choices=['uniform', 'flow', 'none'])
@@ -50,10 +52,10 @@ def add_model_args(parser):
     parser.add_argument('--coupling_network', type=str, default="transformer", choices=["conv", "transformer", "densenet"])
     parser.add_argument('--coupling_blocks', type=int, default=1)
     parser.add_argument('--coupling_channels', type=int, default=32)
-    parser.add_argument('--coupling_depth', type=int, default=1)
+    parser.add_argument('--coupling_depth', type=int, default=1, help="Only applies to conv and densenet coupling layers")
     parser.add_argument('--coupling_dropout', type=float, default=0.0)
-    parser.add_argument('--coupling_gated_conv', type=eval, default=True)
-    parser.add_argument('--coupling_mixtures', type=int, default=4)
+    parser.add_argument('--coupling_gated_conv', type=eval, default=True, help="Only applies to densenet coupling layers")
+    parser.add_argument('--coupling_mixtures', type=int, default=4, help="Only applies to flow++ ('transformer') coupling layers")
     
 
 def get_model_id(args):

@@ -159,7 +159,7 @@ class BoostedFlow(Distribution):
 
         Returns the integer id of the sampled component
         """
-        if type(sampling_components) is int:
+        if isinstance(sampling_components, int):
             assert sampling_components < self.num_components
             return sampling_components
         

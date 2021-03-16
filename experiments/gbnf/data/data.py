@@ -1,5 +1,9 @@
 import math
+import numpy as np
+import torch
+import random
 from torch.utils.data import DataLoader
+
 from torchvision.transforms import RandomHorizontalFlip, Pad, RandomAffine, CenterCrop
 from survae.data.loaders.image import DynamicallyBinarizedMNIST, FixedBinarizedMNIST, MNIST
 from survae.data.loaders.image import CIFAR10, ImageNet32, ImageNet64, SVHN, CelebA32, CelebA64
@@ -59,8 +63,15 @@ def get_data(args):
         raise ValueError(f"{dataset} is an unrecognized dataset.")
 
     # Data Loader
-    loaders = dataset.get_data_loaders(batch_size=args.batch_size, pin_memory=args.pin_memory, num_workers=args.num_workers)
-    train_loader, test_loader = loaders[0], loaders[-1]
+    def _init_fn(worker_id):
+        seed = args.seed + worker_id
+        np.random.seed(seed)
+        random.seed(seed)
+        torch.manual_seed(seed)
+        return
+                       
+    train_loader = dataset.get_data_loader(split="train", batch_size=args.batch_size, shuffle=True, pin_memory=args.pin_memory, num_workers=args.num_workers)
+    test_loader = dataset.get_data_loader(split="test", batch_size=args.batch_size, shuffle=False, pin_memory=args.pin_memory, num_workers=args.num_workers, worker_init_fn=_init_fn)
 
     return train_loader, test_loader, data_shape, cond_shape
 

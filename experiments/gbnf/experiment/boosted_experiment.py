@@ -64,6 +64,7 @@ class BoostedFlowExperiment(FlowExperiment):
                     self.log_eval_metrics(eval_dict)
                     self.eval_epochs.append(epoch)
                     converged, improved = self.stop_early(eval_dict, epoch)
+                    self.sample_fn(components="c")
                 else:
                     eval_dict = None
                     converged = False
@@ -95,7 +96,7 @@ class BoostedFlowExperiment(FlowExperiment):
             self.checkpoint_save()
             
         # Sampling
-        self.sample_fn()
+        self.sample_fn(components="1:c")
 
     def eval_fn(self, epoch):
         if self.args.super_resolution or self.args.conditional:
@@ -125,7 +126,7 @@ class BoostedFlowExperiment(FlowExperiment):
                 loss_sum3 += loss3.detach().cpu().item() * batch_size
 
                 loss_count += batch_size
-                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f} {:.3f} {:.3f}'.format(
+                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: mult={:.3f} add={:.3f} aprx={:.3f}'.format(
                     self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count, loss_sum2/loss_count, loss_sum3/loss_count), end='\r')
             print('')
         return {'bpd': loss_sum/loss_count}
@@ -152,54 +153,60 @@ class BoostedFlowExperiment(FlowExperiment):
                 loss_sum3 += loss3.detach().cpu().item() * batch_size
 
                 loss_count += batch_size
-                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f} {:.3f} {:.3f}'.format(
+                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: mult={:.3f} add={:.3f} aprx={:.3f}'.format(
                     self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count, loss_sum2/loss_count, loss_sum3/loss_count), end='\r')
             print('')
         return {'bpd': loss_sum/loss_count}
 
-    # def log_epoch(self, title, loss_count, data_count, loss_sum):
-    #     print('{}. Component: {}/{}, Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(
-    #         title, self.model.component + 1, self.num_components, self.current_epoch+1, self.args.epochs, loss_count, data_count, loss_sum/loss_count), end='\r')
-    
-    def sample_fn(self):
+    def sample_fn(self, components="1:c", sample_new_batch=False):
         if self.args.samples < 1:
             return
         
         self.model.eval()
-
-        path_check = '{}/check/checkpoint.pt'.format(self.log_path)
-        checkpoint = torch.load(path_check)
-        
-        # get a batch of data and save the input images
-        batch = next(iter(self.eval_loader))
+        new_batch = self.sample_batch is None or sample_new_batch
+        if new_batch:
+            self.sample_batch = next(iter(self.eval_loader))
 
         if self.args.super_resolution or args.conditional:
-            imgs = batch[0][:self.args.samples]
-            context = batch[1][:self.args.samples]
-            self._cond_sample_fn(context, checkpoint)
+            imgs = self.sample_batch[0][:self.args.samples]
+            context = self.sample_batch[1][:self.args.samples]
+            self._cond_sample_fn(context, components, save_context=new_batch)
         else:
-            imgs = batch[:self.args.samples]
-            self._sample_fn(checkpoint)
+            imgs = self.sample_batch[:self.args.samples]
+            self._sample_fn(components)
 
-        # save real samples
-        path_true_samples = '{}/samples/true_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
-        self.save_images(imgs, path_true_samples)
+        if new_batch:
+            # save real samples
+            path_true_samples = '{}/samples/true_te{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
+            self.save_images(imgs, path_true_samples)
 
-    def _cond_sample_fn(self, context, checkpoint):
-        if self.args.super_resolution:
-            path_context = '{}/samples/context_ep{}_s{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed)
+    def _cond_sample_fn(self, context, components, save_context=True):
+        if self.args.super_resolution and save_context:
+            path_context = '{}/samples/context_te{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
             self.save_images(context, path_context)
 
-        # save samples from each component
-        for c in range(self.num_components):
-            path_samples = '{}/samples/sample_ep{}_s{}_c{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed, c)
-            samples = self.model.sample(context.to(self.args.device), component=c)
+        if components == "1:c":
+            # save samples from each component
+            for c in range(self.num_components):
+                path_samples = '{}/samples/sample_te{}_c{}_s{}.png'.format(self.log_path, self.current_epoch, c, self.args.seed)
+                samples = self.model.sample(context.to(self.args.device), component=c)
+                self.save_images(samples, path_samples)
+        else:
+            path_samples = '{}/samples/sample_c{}_ce{}_te{}_s{}.png'.format(
+                self.log_path, self.model.component, self.component_epoch, self.current_epoch, self.args.seed)
+            samples = self.model.sample(context.to(self.args.device), component=self.model.component)
             self.save_images(samples, path_samples)
             
-    def _sample_fn(self, checkpoint):
-        for c in range(self.num_components):
-            path_samples = '{}/samples/sample_ep{}_s{}_c{}.png'.format(self.log_path, checkpoint['current_epoch'], self.args.seed, c)
-            samples = self.model.sample(self.args.samples, component=c)
+    def _sample_fn(self, components):
+        if components == "1:c":
+            for c in range(self.num_components):
+                path_samples = '{}/samples/sample_te{}_c{}_s{}.png'.format(self.log_path, self.current_epoch, c, self.args.seed)
+                samples = self.model.sample(self.args.samples, component=c)
+                self.save_images(samples, path_samples)
+        else:
+            path_samples = '{}/samples/sample_component{}_componentepoch{}_totalepochs{}_seed{}.png'.format(
+                self.log_path, self.model.component, self.component_epoch, self.current_epoch, self.args.seed)
+            samples = self.model.sample(self.args.samples, component=self.model.component)
             self.save_images(samples, path_samples)
                 
     def init_component(self):

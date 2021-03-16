@@ -21,7 +21,6 @@ parser.add_argument('--model', type=str, default=None)
 parser.add_argument('--samples', type=int, default=64)
 parser.add_argument('--nrow', type=int, default=8)
 parser.add_argument('--seed', type=int, default=0)
-parser.add_argument('--double', type=eval, default=False)
 eval_args = parser.parse_args()
 
 path_args = '{}/args.pickle'.format(eval_args.model)
@@ -60,11 +59,10 @@ print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoc
 path_samples = '{}/samples/sample_ep{}_s{}.png'.format(eval_args.model, checkpoint['current_epoch'], eval_args.seed)
 if not os.path.exists(os.path.dirname(path_samples)):
     os.mkdir(os.path.dirname(path_samples))
-
+    
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model = model.to(device)
 model = model.eval()
-if eval_args.double: model = model.double()
 
 # save model samples
 batch = next(iter(eval_loader))

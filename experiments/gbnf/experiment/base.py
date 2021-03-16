@@ -40,6 +40,8 @@ class BaseExperiment(object):
         self.amp = False
         self.scaler = None
 
+        self.sample_batch = None
+
     def train_fn(self, epoch):
         raise NotImplementedError()
 
@@ -171,6 +173,7 @@ class BaseExperiment(object):
                 self.log_eval_metrics(eval_dict)
                 self.eval_epochs.append(epoch)
                 converged, improved = self.stop_early(eval_dict, epoch)
+                self.sample_fn()
             else:
                 eval_dict = None
                 converged = False

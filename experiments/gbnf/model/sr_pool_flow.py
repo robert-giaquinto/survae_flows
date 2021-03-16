@@ -45,7 +45,7 @@ class SRPoolFlow(ConditionalFlow):
     def __init__(self, data_shape, cond_shape, num_bits,
                  num_scales, num_steps,
                  actnorm, conditional_channels,
-                 lowres_encoder_channels, lowres_encoder_blocks, lowres_encoder_depth,
+                 lowres_encoder_channels, lowres_encoder_blocks, lowres_encoder_depth, lowres_upsampler_channels,
                  pooling, compression_ratio,
                  coupling_network,
                  dequant, dequant_steps, dequant_context,
@@ -59,8 +59,8 @@ class SRPoolFlow(ConditionalFlow):
         # initialize context. Only upsample context in ContextInit if latent shape doesn't change during the flow.
         context_init = ContextInit(num_bits=num_bits,
                                    in_channels=cond_shape[0],
-                                   out_channels=min(lowres_encoder_channels),
-                                   mid_channels=min(lowres_encoder_channels),
+                                   out_channels=lowres_encoder_channels,
+                                   mid_channels=lowres_encoder_channels,
                                    num_blocks=lowres_encoder_blocks,
                                    depth=lowres_encoder_depth,
                                    dropout=coupling_dropout)
@@ -95,7 +95,7 @@ class SRPoolFlow(ConditionalFlow):
         for scale in range(num_scales):
 
             # reshape the context to the current size for this scale
-            context_upsampler_net = UpsamplerNet(in_channels=min(lowres_encoder_channels), out_shape=current_shape, mid_channels=lowres_encoder_channels)
+            context_upsampler_net = UpsamplerNet(in_channels=lowres_encoder_channels, out_shape=current_shape, mid_channels=lowres_upsampler_channels)
             transforms.append(ContextUpsampler(context_net=context_upsampler_net, direction='forward'))    
             
             for step in range(num_steps):

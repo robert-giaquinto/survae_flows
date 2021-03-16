@@ -9,15 +9,16 @@ class PresplitLoader():
     def num_splits(self):
         return len(self.splits)
 
-    def get_data_loader(self, split, batch_size, shuffle=True, pin_memory=True, num_workers=4):
-        return DataLoader(getattr(self, split), batch_size=batch_size, shuffle=True, pin_memory=pin_memory, num_workers=num_workers)
+    def get_data_loader(self, split, batch_size, shuffle=True, pin_memory=True, num_workers=4, worker_init_fn=None):
+        return DataLoader(getattr(self, split), batch_size=batch_size, shuffle=True, pin_memory=pin_memory, num_workers=num_workers, worker_init_fn=worker_init_fn)
 
-    def get_data_loaders(self, batch_size, shuffle=True, pin_memory=True, num_workers=4):
+    def get_data_loaders(self, batch_size, shuffle=True, pin_memory=True, num_workers=4, worker_init_fn=None):
         data_loaders = [self.get_data_loader(split=split,
                                              batch_size=batch_size,
                                              shuffle=shuffle,
                                              pin_memory=pin_memory,
-                                             num_workers=num_workers) for split in self.splits]
+                                             num_workers=num_workers,
+                                             worker_init_fn=worker_init_fn) for split in self.splits]
         return data_loaders
 
 

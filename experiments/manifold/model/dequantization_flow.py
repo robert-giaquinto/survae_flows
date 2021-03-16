@@ -16,7 +16,8 @@ class DequantizationFlow(ConditionalInverseFlow):
     def __init__(self, data_shape, num_bits, num_steps, coupling_network, num_context,
                  num_blocks, mid_channels, depth, growth=None, dropout=None, gated_conv=None, num_mixtures=None):
 
-        context_network_type = "conv"
+        #context_network_type = "conv"
+        context_network_type = coupling_network
         
         if context_network_type == "densenet":
             context_net = nn.Sequential(LambdaLayer(lambda x: 2*x.float()/(2**num_bits-1)-1),
