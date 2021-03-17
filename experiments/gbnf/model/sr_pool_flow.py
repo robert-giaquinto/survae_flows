@@ -105,7 +105,7 @@ class SRPoolFlow(ConditionalFlow):
                     transforms.append(Conv1x1(current_shape[0]))
                 else:
                     if actnorm: transforms.append(ConditionalActNormBijection2d(cond_shape=current_shape, out_channels=current_shape[0], mid_channels=conditional_channels))
-                    transforms.append(ConditionalConv1x1(cond_shape=current_shape, out_channels=current_shape[0], mid_channels=conditional_channels, slogdet_cpu=False))
+                    transforms.append(ConditionalConv1x1(cond_shape=current_shape, out_channels=current_shape[0], mid_channels=conditional_channels, slogdet_cpu=True))
                     
                 if coupling_network in ["conv", "densenet"]:
                     transforms.append(SRCoupling(x_size=current_shape, 

@@ -1,3 +1,4 @@
+import pickle
 import torch
 import torch.nn as nn
 import copy
@@ -20,9 +21,18 @@ class ConditionalGBNF(ConditionalBoostedFlow):
 
         flows = []
         for c in range(args.boosted_components):
-            flow_args = copy.deepcopy(args)
-            flow_args.boosted_components = 1
-            flow = init_model(args=flow_args, data_shape=data_shape, cond_shape=cond_shape)
+            if args.pretrained_model is not None and c == 0:
+                path_args = '{}/args.pickle'.format(args.pretrained_model)
+                path_check = '{}/check/checkpoint.pt'.format(args.pretrained_model)
+                with open(path_args, 'rb') as f:
+                    pretrained_args = pickle.load(f)
+
+                flow = init_model(args=pretrained_args, data_shape=data_shape, cond_shape=cond_shape)
+            else:
+                flow_args = copy.deepcopy(args)
+                flow_args.boosted_components = 1
+                flow = init_model(args=flow_args, data_shape=data_shape, cond_shape=cond_shape)
+                
             flows.append(flow)
         
 

@@ -42,8 +42,11 @@ class BoostedFlowExperiment(FlowExperiment):
         
         self.num_components = args.boosted_components
         self.epochs_per_component = self.args.epochs
-        self.args.epochs = self.args.epochs * self.num_components
         self.component_epoch = 0
+        if args.pretrained_model is not None:
+            self.args.epochs = self.args.epochs * (self.num_components - 1)
+        else:
+            self.args.epochs = self.args.epochs * self.num_components
 
     def run(self):
         if self.args.resume:
@@ -108,55 +111,47 @@ class BoostedFlowExperiment(FlowExperiment):
         self.model.eval()
         with torch.no_grad():
             loss_sum = 0.0
-            loss_sum2 = 0.0
-            loss_sum3 = 0.0
+            approx_loss_sum = 0.0
             loss_count = 0
             for (x, context) in self.eval_loader:
                 batch_size = len(x)
                 context = context.to(self.args.device)
                 x = x.to(self.args.device)
                 
-                loss = -1.0 * self.model.mult_mixture_log_prob(x, context).sum() / (math.log(2) * x.shape.numel())
+                loss = -1.0 * self.model.log_prob(x, context).sum() / (math.log(2) * x.shape.numel())
                 loss_sum += loss.detach().cpu().item() * batch_size
 
-                loss2 = -1.0 * self.model.add_mixture_log_prob(x, context).sum() / (math.log(2) * x.shape.numel())
-                loss_sum2 += loss2.detach().cpu().item() * batch_size
-
-                loss3 = -1.0 * self.model.approximate_mixture_log_prob(x, context).sum() / (math.log(2) * x.shape.numel())
-                loss_sum3 += loss3.detach().cpu().item() * batch_size
+                approx_loss = -1.0 * self.model.approximate_mixture_log_prob(x, context).sum() / (math.log(2) * x.shape.numel())
+                approx_loss_sum += approx_loss.detach().cpu().item() * batch_size
 
                 loss_count += batch_size
-                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: mult={:.3f} add={:.3f} aprx={:.3f}'.format(
-                    self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count, loss_sum2/loss_count, loss_sum3/loss_count), end='\r')
+                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}, aprx={:.3f}'.format(
+                    self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count, approx_loss_sum/loss_count), end='\r')
             print('')
-        return {'bpd': loss_sum/loss_count}
-
+        return {'bpd': loss_sum/loss_count, 'bpd_aprx': approx_loss_sum/loss_count}
 
     def _eval_fn(self, epoch):
         self.model.eval()
         with torch.no_grad():
             loss_sum = 0.0
-            loss_sum2 = 0.0
-            loss_sum3 = 0.0
+            approx_loss_sum = 0.0
+
             loss_count = 0
             for x in self.eval_loader:
                 batch_size = len(x)
                 x.to(self.args.device)
 
-                loss = -1.0 * self.model.mult_mixture_log_prob(x).sum() / (math.log(2) * x.shape.numel())
+                loss = -1.0 * self.model.log_prob(x).sum() / (math.log(2) * x.shape.numel())
                 loss_sum += loss.detach().cpu().item() * batch_size
 
-                loss2 = -1.0 * self.model.add_mixture_log_prob(x).sum() / (math.log(2) * x.shape.numel())
-                loss_sum2 += loss2.detach().cpu().item() * batch_size
-
-                loss3 = -1.0 * self.model.approximate_mixture_log_prob(x).sum() / (math.log(2) * x.shape.numel())
-                loss_sum3 += loss3.detach().cpu().item() * batch_size
+                approx_loss = -1.0 * self.model.approximate_mixture_log_prob(x).sum() / (math.log(2) * x.shape.numel())
+                approx_loss_sum += approx_loss.detach().cpu().item() * batch_size
 
                 loss_count += batch_size
-                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: mult={:.3f} add={:.3f} aprx={:.3f}'.format(
-                    self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count, loss_sum2/loss_count, loss_sum3/loss_count), end='\r')
+                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}, aprx={:.3f}'.format(
+                    self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count, approx_loss_sum/loss_count), end='\r')                
             print('')
-        return {'bpd': loss_sum/loss_count}
+        return {'bpd': loss_sum/loss_count, 'bpd_aprx': approx_loss_sum/loss_count}
 
     def sample_fn(self, components="1:c", sample_new_batch=False):
         if self.args.samples < 1:

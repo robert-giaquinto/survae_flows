@@ -29,30 +29,42 @@ class ConditionalBoostedFlow(BoostedFlow):
         if self.component == 0:
             return self.flows[0].log_prob(x, context)
 
-        # 1. compute weight for each observation according to fixed components
-        fixed_nll = torch.zeros(x.shape[0], device=x.device)
-        for c in range(self.component):
-            rho = self.normalize(self.rho[:c+1])
-            fixed_nll -= rho[c] * self.flows[c].log_prob(x, context)
+        if self.mixture_type == "multiplicative":
+            mixture_log_prob = self.mult_mixture_log_prob
+        elif self.mixture_type == "additive":
+            mixture_log_prob = self.add_mixture_log_prob
 
-        # 2. sample x with replacement
-        x_weights = self.normalize(fixed_nll, softmax=True, max_wt=0.1)
-        x_resampled = x[torch.multinomial(x_weights, x.size(0), replacement=True)]
+        if self.training:
+            # 1. compute weight for each observation according to fixed components
+            fixed_nll = -mixture_log_prob(x, context, sum_over_fixed=True)
 
-        # 3. compute new component's log_prob for the resampled x
-        log_prob = self.flows[self.component].log_prob(x_resampled, context)
+            # 2. sample x with replacement
+            x_weights = self.normalize(fixed_nll, softmax=True, max_wt=0.1)
+            x_resampled = x[torch.multinomial(x_weights, x.size(0), replacement=True)]
+
+            # 3. compute new component's log_prob for the resampled x
+            log_prob = self.flows[self.component].log_prob(x_resampled, context)
+
+        else:
+            log_prob = mixture_log_prob(x, context, sum_over_fixed=False)
+            
         return log_prob
 
-    def mult_mixture_log_prob(self, x, context):
+    def mult_mixture_log_prob(self, x, context, sum_over_fixed=False):
         """
         log probability for the full ensemble of gradient boosted components
         """        
         if self.component == 0:
             return self.flows[0].log_prob(x, context)
 
+        num_components = self.component # sum over first c-1 components
+        if not sum_over_fixed:
+            num_components += 1 # sum over the first c components
+
         log_prob = torch.zeros(x.shape[0], device=x.device)
-        for c in range(self.component + 1):
-            log_prob += self.flows[c].log_prob(x, context) * self.rho[c]
+        for c in range(num_components):
+            rho = self.normalize(self.rho[:c+1])
+            log_prob += rho[c] * self.flows[c].log_prob(x, context)
 
         return log_prob
 
@@ -76,7 +88,6 @@ class ConditionalBoostedFlow(BoostedFlow):
 
         return log_prob / (1.0 * num_samples)
 
-        
     def add_mixture_log_prob(self, x, context):
         """
         log probability for the full ensemble of gradient boosted components
@@ -84,8 +95,12 @@ class ConditionalBoostedFlow(BoostedFlow):
         if self.component == 0:
             return self.flows[0].log_prob(x, context)
 
+        num_components = self.component # sum over first c-1 components
+        if not sum_over_fixed:
+            num_components += 1 # sum over the first c components
+
         log_prob = torch.zeros(x.shape[0], device=x.device)
-        for c in range(self.component + 1):
+        for c in range(num_components):
             log_prob_c = self.flows[c].log_prob(x, context)
             if c == 0:
                 log_prob = log_prob_c

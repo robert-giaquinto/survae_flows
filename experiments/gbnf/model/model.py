@@ -27,6 +27,7 @@ def add_model_args(parser):
     # boosting parameters
     parser.add_argument('--boosted_components', type=int, default=1)
     parser.add_argument('--rho_init', type=str, default='decreasing', choices=['decreasing', 'uniform'])
+    parser.add_argument('--pretrained_model', type=str, default=None, help="Path to a pretrained flow to use as first boosting component")
 
     # flow parameters
     parser.add_argument('--num_scales', type=int, default=2)
