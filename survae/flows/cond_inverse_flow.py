@@ -31,19 +31,23 @@ class ConditionalInverseFlow(ConditionalDistribution):
 
     def sample(self, context):
         if self.context_init: context = self.context_init(context)
+        
         if isinstance(self.base_dist, ConditionalDistribution):
             z = self.base_dist.sample(context)
         else:
             z = self.base_dist.sample(context_size(context))
+            
         for transform in self.transforms:
             if isinstance(transform, ConditionalTransform):
                 z, _ = transform(z, context)
             else:
                 z, _ = transform(z)
+                
         return z
 
     def sample_with_log_prob(self, context):
         if self.context_init: context = self.context_init(context)
+        
         if isinstance(self.base_dist, ConditionalDistribution):
             z, log_prob = self.base_dist.sample_with_log_prob(context)
         else:

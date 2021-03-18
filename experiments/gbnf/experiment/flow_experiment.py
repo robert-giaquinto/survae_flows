@@ -2,7 +2,7 @@ import torch
 import torchvision.utils as vutils
 
 from survae.distributions import DataParallelDistribution
-from survae.utils import elbo_bpd
+from survae.utils import elbo_bpd, cond_elbo_bpd
 from .utils import get_args_table, clean_dict
 
 # Path
@@ -189,12 +189,12 @@ class FlowExperiment(BaseExperiment):
         loss_count = 0
         for x in self.train_loader:
 
-            if isinstance(x, list) or isinstance(x, tuple):
+            if self.args.super_resolution or self.args.conditional:
                 batch_size = len(x[0])
                 x = (x[0].to(self.args.device), x[1].to(self.args.device))
             else:
                 batch_size = len(x)
-                x.to(self.args.device)
+                x = x.to(self.args.device)
 
             # Cast operations to mixed precision
             with torch.cuda.amp.autocast():
@@ -235,14 +235,13 @@ class FlowExperiment(BaseExperiment):
         for x in self.train_loader:
             self.optimizer.zero_grad()
 
-            if isinstance(x, list) or isinstance(x, tuple):
+            if self.args.super_resolution or self.args.conditional:
                 batch_size = len(x[0])
-                x = (x[0].to(self.args.device), x[1].to(self.args.device))
+                loss = cond_elbo_bpd(self.model, x[0].to(self.args.device), context=x[1].to(self.args.device))
             else:
                 batch_size = len(x)
-                x.to(self.args.device)
-                
-            loss = elbo_bpd(self.model, x)
+                loss = elbo_bpd(self.model, x.to(self.args.device))
+
             loss.backward()
 
             if self.max_grad_norm > 0:
@@ -268,14 +267,13 @@ class FlowExperiment(BaseExperiment):
             loss_sum = 0.0
             loss_count = 0
             for x in self.eval_loader:
-                if isinstance(x, list) or isinstance(x, tuple):
+                if self.args.super_resolution or self.args.conditional:
                     batch_size = len(x[0])
-                    x = list([data.to(self.args.device) for data in x])
+                    loss = cond_elbo_bpd(self.model, x[0].to(self.args.device), context=x[1].to(self.args.device))
                 else:
                     batch_size = len(x)
-                    x.to(self.args.device)
-                
-                loss = elbo_bpd(self.model, x)
+                    loss = elbo_bpd(self.model, x.to(self.args.device))
+
                 loss_sum += loss.detach().cpu().item() * batch_size
                 loss_count += batch_size
                 print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(
@@ -283,44 +281,44 @@ class FlowExperiment(BaseExperiment):
             print('')
         return {'bpd': loss_sum/loss_count}
 
-    def sample_fn(self, sample_new_batch=False):
+    def sample_fn(self, temperature=None, sample_new_batch=False):
         if self.args.samples < 1:
             return
 
         self.model.eval()
-        new_batch = self.sample_batch is None or sample_new_batch
-        if new_batch:
+        get_new_batch = self.sample_batch is None or sample_new_batch
+        if get_new_batch:
             self.sample_batch = next(iter(self.eval_loader))
 
-        if self.args.super_resolution or args.conditional:
+        if self.args.super_resolution or self.args.conditional:
             imgs = self.sample_batch[0][:self.args.samples]
             context = self.sample_batch[1][:self.args.samples]
-            self._cond_sample_fn(context, save_context=new_batch)
+            self._cond_sample_fn(context, temperature=temperature, save_context=get_new_batch)
         else:
             imgs = self.sample_batch[:self.args.samples]
-            self._sample_fn()
+            self._sample_fn(temperature=temperature)
 
-        if new_batch:
+        if get_new_batch:
             # save real samples
             path_true_samples = '{}/samples/true_ep{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
             self.save_images(imgs, path_true_samples)
 
     # def _sample_fn(self, checkpoint):
-    def _sample_fn(self):
-        path_samples = '{}/samples/sample_ep{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
-        samples = self.model.sample(self.args.samples)
+    def _sample_fn(self, temperature=None):
+        path_samples = '{}/samples/sample_e{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
+        samples = self.model.sample(self.args.samples, temperature=temperature)
         self.save_images(samples, path_samples)
 
     # def _cond_sample_fn(self, context, checkpoint):
-    def _cond_sample_fn(self, context, save_context=True):
+    def _cond_sample_fn(self, context, temperature=None, save_context=True):
         if save_context:
             # save low-resolution samples
-            path_context = '{}/samples/context_ep{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
+            path_context = '{}/samples/context_e{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
             self.save_images(context, path_context)
 
         # save samples from model conditioned on context
-        path_samples = '{}/samples/sample_ep{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
-        samples = self.model.sample(context.to(self.args.device))
+        path_samples = '{}/samples/sample_e{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
+        samples = self.model.sample(context.to(self.args.device), temperature=temperature)
         self.save_images(samples, path_samples)
 
     def save_images(self, imgs, file_path):

@@ -32,9 +32,6 @@ class ConditionalFlow(ConditionalDistribution):
         
         log_prob = torch.zeros(x.shape[0], device=x.device)
         for transform in self.transforms:
-
-            #print("\ninput x", x.shape, "encoded_context", encoded_context.shape, transform.__repr__)
-            
             if isinstance(transform, ConditionalTransform):
                 x, ldj = transform(x, encoded_context)
                 log_prob += ldj
@@ -42,12 +39,7 @@ class ConditionalFlow(ConditionalDistribution):
                 x, ldj = transform(x)
                 log_prob += ldj
             elif isinstance(transform, ContextUpsampler):
-                if transform.direction == "forward":
-                    encoded_context = transform(context)
-            else:
-                raise ValueError(f"ConditionalFlow only accepts ConditionalTransform, Transform, and ContextUpsampler, not {type(transform)}")
-
-            #print("output x", x.shape, "encoded_context", encoded_context.shape)
+                if transform.direction == "forward": encoded_context = transform(context)
             
         if isinstance(self.base_dist, ConditionalDistribution):
             log_prob += self.base_dist.log_prob(x, encoded_context)
@@ -56,30 +48,22 @@ class ConditionalFlow(ConditionalDistribution):
             
         return log_prob
 
-    def sample(self, context):
+    def sample(self, context, temperature):
         if self.context_init: context = self.context_init(context)
         encoded_context = context
 
         if isinstance(self.base_dist, ConditionalDistribution):
             z = self.base_dist.sample(encoded_context)
         else:
-            z = self.base_dist.sample(context_size(encoded_context))
+            z = self.base_dist.sample(context_size(encoded_context), temperature=temperature)
 
-        for transform in reversed(self.transforms):
-
-            #print("\ninput z", z.shape, "encoded_context", encoded_context.shape, transform.__repr__)
-            
+        for transform in reversed(self.transforms):            
             if isinstance(transform, ConditionalTransform):
                 z = transform.inverse(z, encoded_context)
             elif isinstance(transform, Transform):
                 z = transform.inverse(z)
             elif isinstance(transform, ContextUpsampler):
-                if transform.direction == "inverse":
-                    encoded_context = transform.inverse(context)
-            else:
-                raise ValueError(f"ConditionalFlow only accepts ConditionalTransform, Transform, and ContextUpsampler, not {type(transform)}")
-
-            #print("output z", z.shape, "encoded_context", encoded_context.shape)
+                if transform.direction == "inverse": encoded_context = transform.inverse(context)
             
         return z
 

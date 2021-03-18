@@ -139,7 +139,7 @@ class BoostedFlowExperiment(FlowExperiment):
             loss_count = 0
             for x in self.eval_loader:
                 batch_size = len(x)
-                x.to(self.args.device)
+                x = x.to(self.args.device)
 
                 loss = -1.0 * self.model.log_prob(x).sum() / (math.log(2) * x.shape.numel())
                 loss_sum += loss.detach().cpu().item() * batch_size
@@ -153,29 +153,29 @@ class BoostedFlowExperiment(FlowExperiment):
             print('')
         return {'bpd': loss_sum/loss_count, 'bpd_aprx': approx_loss_sum/loss_count}
 
-    def sample_fn(self, components="1:c", sample_new_batch=False):
+    def sample_fn(self, components="1:c", temperature=None, sample_new_batch=False):
         if self.args.samples < 1:
             return
         
         self.model.eval()
-        new_batch = self.sample_batch is None or sample_new_batch
-        if new_batch:
+        get_new_batch = self.sample_batch is None or sample_new_batch
+        if get_new_batch:
             self.sample_batch = next(iter(self.eval_loader))
 
-        if self.args.super_resolution or args.conditional:
+        if self.args.super_resolution or self.args.conditional:
             imgs = self.sample_batch[0][:self.args.samples]
             context = self.sample_batch[1][:self.args.samples]
-            self._cond_sample_fn(context, components, save_context=new_batch)
+            self._cond_sample_fn(context, components, temperature=temperature, save_context=get_new_batch)
         else:
             imgs = self.sample_batch[:self.args.samples]
-            self._sample_fn(components)
+            self._sample_fn(components, temperature=temperature)
 
-        if new_batch:
+        if get_new_batch:
             # save real samples
             path_true_samples = '{}/samples/true_te{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
             self.save_images(imgs, path_true_samples)
 
-    def _cond_sample_fn(self, context, components, save_context=True):
+    def _cond_sample_fn(self, context, components, temperature=None, save_context=True):
         if self.args.super_resolution and save_context:
             path_context = '{}/samples/context_te{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
             self.save_images(context, path_context)
@@ -184,24 +184,24 @@ class BoostedFlowExperiment(FlowExperiment):
             # save samples from each component
             for c in range(self.num_components):
                 path_samples = '{}/samples/sample_te{}_c{}_s{}.png'.format(self.log_path, self.current_epoch, c, self.args.seed)
-                samples = self.model.sample(context.to(self.args.device), component=c)
+                samples = self.model.sample(context.to(self.args.device), component=c, temperature=temperature)
                 self.save_images(samples, path_samples)
         else:
             path_samples = '{}/samples/sample_c{}_ce{}_te{}_s{}.png'.format(
                 self.log_path, self.model.component, self.component_epoch, self.current_epoch, self.args.seed)
-            samples = self.model.sample(context.to(self.args.device), component=self.model.component)
+            samples = self.model.sample(context.to(self.args.device), component=self.model.component, temperature=temperature)
             self.save_images(samples, path_samples)
             
-    def _sample_fn(self, components):
+    def _sample_fn(self, components, temperature=None):
         if components == "1:c":
             for c in range(self.num_components):
                 path_samples = '{}/samples/sample_te{}_c{}_s{}.png'.format(self.log_path, self.current_epoch, c, self.args.seed)
-                samples = self.model.sample(self.args.samples, component=c)
+                samples = self.model.sample(self.args.samples, component=c, temperature=temperature)
                 self.save_images(samples, path_samples)
         else:
             path_samples = '{}/samples/sample_component{}_componentepoch{}_totalepochs{}_seed{}.png'.format(
                 self.log_path, self.model.component, self.component_epoch, self.current_epoch, self.args.seed)
-            samples = self.model.sample(self.args.samples, component=self.model.component)
+            samples = self.model.sample(self.args.samples, component=self.model.component, temperature=temperature)
             self.save_images(samples, path_samples)
                 
     def init_component(self):

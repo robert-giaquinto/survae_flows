@@ -21,6 +21,7 @@ parser.add_argument('--model', type=str, default=None)
 parser.add_argument('--samples', type=int, default=64)
 parser.add_argument('--nrow', type=int, default=8)
 parser.add_argument('--seed', type=int, default=0)
+parser.add_argument('--temperature', type=float, default=None)
 eval_args = parser.parse_args()
 
 path_args = '{}/args.pickle'.format(eval_args.model)
@@ -56,36 +57,45 @@ print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoc
 ## Sample ##
 ############
 
-path_samples = '{}/samples/sample_ep{}_s{}.png'.format(eval_args.model, checkpoint['current_epoch'], eval_args.seed)
-if not os.path.exists(os.path.dirname(path_samples)):
-    os.mkdir(os.path.dirname(path_samples))
+def save_images(imgs, file_path, num_bits=args.num_bits, nrow=eval_args.nrow):
+    if not os.path.exists(os.path.dirname(file_path)):
+        os.mkdir(os.path.dirname(file_path))
+        
+    out = imgs.cpu().float()
+    if out.max().item() > 2:
+        out /= (2**num_bits - 1)
+            
+    vutils.save_image(out, file_path, nrow=nrow)
     
+
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model = model.to(device)
 model = model.eval()
 
 # save model samples
 batch = next(iter(eval_loader))
-if args.flow in ['sr', 'conditional']:
+if args.super_resolution:
     imgs = batch[0][:eval_args.samples]
-    context = batch[1][:eval_args.samples]
-    samples = model.sample(context.to(device)).cpu().float() / (2**args.num_bits - 1)
-
-    # save low-resolution samples too
-    path_context_samples = '{}/samples/context_ep{}_s{}.png'.format(eval_args.model, checkpoint['current_epoch'], eval_args.seed)
-    context = context.cpu().float()
-    if context.max().item() > 2:
-        context /= (2**args.num_bits - 1)
-    vutils.save_image(context, path_context_samples, nrow=eval_args.nrow)
+    num_samples_or_context = batch[1][:eval_args.samples]
+    path_context = f"{eval_args.model}/samples/context_e{checkpoint['current_epoch']}_s{eval_args.seed}.png"
+    save_images(num_samples_or_context, path_context)
+    num_samples_or_context = num_samples_or_context.to(device)
 else:
-    samples = model.sample(eval_args.samples).cpu().float() / (2**args.num_bits - 1)
+    num_samples_or_context = eval_args.samples
     imgs = batch[:eval_args.samples]
-    
-vutils.save_image(samples, path_samples, nrow=eval_args.nrow)
+
+temp_str = f"_t{int(100 * eval_args.temperature)}.png" if eval_args.temperature is not None else ".png"
+if args.boosted_components > 1:
+    for c in range(model.num_components):
+        path_samples = f"{eval_args.model}/samples/sample_e{checkpoint['current_epoch']}_c{c}_s{eval_args.seed}" + temp_str
+        samples = model.sample(num_samples_or_context, component=c, temperature=eval_args.temperature)
+        save_images(samples, path_samples)
+        
+else:
+    path_samples = f"{eval_args.model}/samples/sample_e{checkpoint['current_epoch']}_s{eval_args.seed}" + temp_str
+    samples = model.sample(num_samples_or_context, temperature=eval_args.temperature)
+    save_images(samples, path_samples)
                 
 # save real samples too
-path_true_samples = '{}/samples/true_ep{}_s{}.png'.format(eval_args.model, checkpoint['current_epoch'], eval_args.seed)
-imgs = imgs.cpu().float()
-if imgs.max().item() > 2:
-    imgs /= (2**args.num_bits - 1)
-vutils.save_image(imgs, path_true_samples, nrow=eval_args.nrow)
+path_true_samples = f"{eval_args.model}/samples/true_e{checkpoint['current_epoch']}_s{eval_args.seed}.png"
+save_images(imgs, path_true_samples)

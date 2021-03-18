@@ -32,8 +32,8 @@ class Flow(Distribution):
         log_prob += self.base_dist.log_prob(x)
         return log_prob
 
-    def sample(self, num_samples):
-        z = self.base_dist.sample(num_samples)
+    def sample(self, num_samples, temperature=None):
+        z = self.base_dist.sample(num_samples, temperature)
         for transform in reversed(self.transforms):
             z = transform.inverse(z)
         return z

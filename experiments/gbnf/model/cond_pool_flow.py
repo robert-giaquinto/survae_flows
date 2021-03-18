@@ -9,7 +9,9 @@ from model.dequantization_flow import DequantizationFlow
 
 
 class CondPoolFlow(ConditionalFlow):
-
+    """
+    TODO should use condititonal base distribution
+    """
     def __init__(self, data_shape, cond_shape, num_bits, num_scales, num_steps, actnorm, pooling,
                  dequant, dequant_steps, dequant_context,
                  densenet_blocks, densenet_channels, densenet_depth,

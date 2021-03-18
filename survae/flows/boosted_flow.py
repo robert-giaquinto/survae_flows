@@ -135,9 +135,15 @@ class BoostedFlow(Distribution):
 
         return log_prob / (1.0 * num_samples)
         
-    def sample(self, num_samples, component="1:c"):
+    def sample(self, num_samples_or_context, component="1:c", temperature=None):
+        """
+        Can generate samples either from all components or a specific component
+        Note num_smaples can also take the place of context for the conditional GBNF.
+
+        todo can create a "mix" by sampling a component for each of num_samples and concatenate results
+        """
         c = self._sample_component(component)
-        z = self.flows[c].sample(num_samples)
+        z = self.flows[c].sample(num_samples_or_context, temperature=temperature)
         return z
 
     def sample_with_log_prob(self, num_samples):

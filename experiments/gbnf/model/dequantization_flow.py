@@ -8,7 +8,7 @@ from survae.nn.layers import LambdaLayer, Conv2d, Conv2dZeros
 from survae.nn.blocks import DenseBlock
 from survae.nn.nets import ConvNet, GatedConvNet, TransformerNet, ConvAttnBlock
 
-from .coupling import ConditionalCoupling, ConditionalMixtureCoupling #, MixtureCoupling
+from .coupling import ConditionalCoupling, ConditionalMixtureCoupling
 
 
 class DequantizationFlow(ConditionalInverseFlow):

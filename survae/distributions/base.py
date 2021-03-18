@@ -17,7 +17,7 @@ class Distribution(nn.Module):
         """
         raise NotImplementedError()
 
-    def sample(self, num_samples):
+    def sample(self, num_samples, temperature):
         """Generates samples from the distribution.
 
         Args:

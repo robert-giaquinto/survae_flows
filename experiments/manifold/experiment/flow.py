@@ -210,7 +210,8 @@ class FlowExperiment(BaseExperiment):
 
             # Cast operations to mixed precision
             with torch.cuda.amp.autocast():
-                loss = elbo_bpd(self.model, x.to(self.args.device), beta=beta)
+                loss = - self.model.log_prob(x.to(self.args.device), beta=beta).sum() / (math.log(2) * x.shape.numel())
+                #loss = elbo_bpd(self.model, x.to(self.args.device), beta=beta)
 
             # Scale loss and call backward() to create scaled gradients
             self.scaler.scale(loss).backward()
@@ -249,7 +250,8 @@ class FlowExperiment(BaseExperiment):
         for x in self.train_loader:
             self.optimizer.zero_grad()
 
-            loss = elbo_bpd(self.model, x.to(self.args.device), beta=beta)
+            loss = - self.model.log_prob(x.to(self.args.device), beta=beta).sum() / (math.log(2) * x.shape.numel())
+            #loss = elbo_bpd(self.model, x.to(self.args.device), beta=beta)
             loss.backward()
 
             if self.max_grad_norm > 0:

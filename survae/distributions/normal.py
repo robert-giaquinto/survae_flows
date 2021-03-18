@@ -19,8 +19,11 @@ class StandardNormal(Distribution):
         log_inner = - 0.5 * x**2
         return sum_except_batch(log_base+log_inner)
 
-    def sample(self, num_samples):
-        return torch.randn(num_samples, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype)
+    def sample(self, num_samples, temperature=None):
+        if temperature is None:
+            return torch.randn(num_samples, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype)
+        else:
+            return torch.normal(mean=0, std=temperature, size=self.shape, device=self.buffer.device, dtype=self.buffer.dtype)
 
 
 class DiagonalNormal(Distribution):
@@ -37,10 +40,14 @@ class DiagonalNormal(Distribution):
         log_inner = - 0.5 * torch.exp(-2 * self.log_scale) * ((x - self.loc) ** 2)
         return sum_except_batch(log_base+log_inner)
 
-    def sample(self, num_samples):
+    def sample(self, num_samples, temperature=None):
         eps = torch.randn(num_samples, *self.shape, device=self.loc.device, dtype=self.loc.dtype)
-        return self.loc + self.log_scale.exp() * eps
-
+        z = self.loc + self.log_scale.exp() * eps
+        if temperature is None:
+            return z
+        else:
+            return z * temperature
+            
 
 class ConvNormal2d(DiagonalNormal):
     def __init__(self, shape):

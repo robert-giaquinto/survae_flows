@@ -17,5 +17,6 @@ class StandardUniform(Distribution):
         ub = mean_except_batch(x.le(self.one).type(self.one.dtype))
         return torch.log(lb*ub)
 
-    def sample(self, num_samples):
+    def sample(self, num_samples, temperature=None):
         return torch.rand((num_samples,) + self.shape, device=self.zero.device, dtype=self.zero.dtype)
+        

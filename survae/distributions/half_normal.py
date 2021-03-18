@@ -20,5 +20,9 @@ class StandardHalfNormal(Distribution):
         log_probs[x < 0] = -math.inf
         return sum_except_batch(log_probs)
 
-    def sample(self, num_samples):
-        return torch.randn(num_samples, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype).abs()
+    def sample(self, num_samples, temperature=None):
+        if temperature is None:
+            return torch.randn(num_samples, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype).abs()
+        else:
+            return torch.normal(mean=0, std=temperature, size=self.shape, device=self.buffer.device, dtype=self.buffer.dtype).abs()
+
