@@ -189,16 +189,17 @@ class FlowExperiment(BaseExperiment):
         loss_count = 0
         for x in self.train_loader:
 
+            # Cast operations to mixed precision
             if self.args.super_resolution or self.args.conditional:
                 batch_size = len(x[0])
-                x = (x[0].to(self.args.device), x[1].to(self.args.device))
+                x = x[0].to(self.args.device)
+                context = x[1].to(self.args.device)
+                with torch.cuda.amp.autocast():
+                    loss = cond_elbo_bpd(self.model, x, context)
             else:
                 batch_size = len(x)
-                x = x.to(self.args.device)
-
-            # Cast operations to mixed precision
-            with torch.cuda.amp.autocast():
-                loss = elbo_bpd(self.model, x)
+                with torch.cuda.amp.autocast():
+                    loss = elbo_bpd(self.model, x.to(self.args.device))
 
             # Scale loss and call backward() to create scaled gradients
             self.scaler.scale(loss).backward()
