@@ -195,10 +195,8 @@ class FlowExperiment(BaseExperiment):
             # Cast operations to mixed precision
             if self.args.super_resolution or self.args.conditional:
                 batch_size = len(x[0])
-                x = x[0].to(self.args.device)
-                context = x[1].to(self.args.device)
                 with torch.cuda.amp.autocast():
-                    loss = cond_elbo_bpd(self.model, x, context)
+                    loss = cond_elbo_bpd(self.model, x[0].to(self.args.device), context=x[1].to(self.args.device))
             else:
                 batch_size = len(x)
                 with torch.cuda.amp.autocast():
