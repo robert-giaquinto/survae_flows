@@ -48,8 +48,6 @@ with open(path_args, 'rb') as f:
 # Adjust args
 args.name = time.strftime("%Y-%m-%d_%H-%M-%S")
 args.resume = None
-args.freeze = False
-args.load_pretrained_weights = False
 args.epochs = more_args.new_epochs
 if more_args.new_lr is not None: args.lr = more_args.new_lr
 if more_args.new_batch_size is not None: args.batch_size = more_args.new_batch_size
@@ -59,13 +57,12 @@ if more_args.new_num_workers is not None: args.num_workers = more_args.new_num_w
 if more_args.new_amp is not None:
     args.amp = more_args.new_amp
     if more_args.new_amp:
-        args.parallel = None
+        args.parallel = None  # cannot run in parallel on AMP (yet)
 
 # Store more_args
 args.start_model = more_args.model
 args.new_epochs = more_args.new_epochs
 args.new_lr = more_args.new_lr if more_args.new_lr is not None else args.lr
-
 
 ##################
 ## Specify data ##

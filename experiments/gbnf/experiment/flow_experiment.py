@@ -70,12 +70,13 @@ class FlowExperiment(BaseExperiment):
             args.project = '_'.join([data_id, model_id])
 
         arch_id = f"{args.coupling_network}_coupling_scales{args.num_scales}_steps{args.num_steps}"
+        seed_id = f"seed{args.seed}"
         if args.name == "debug":
             log_path = os.path.join(
-                self.log_base, "debug", data_id, model_id, arch_id, optim_id, f"seed{args.seed}", time.strftime("%Y-%m-%d_%H-%M-%S"))
+                self.log_base, "debug", data_id, model_id, arch_id, optim_id, seed_id, time.strftime("%Y-%m-%d_%H-%M-%S"))
         else:
             log_path = os.path.join(
-                self.log_base, data_id, model_id, arch_id, optim_id, f"seed{args.seed}", args.name)
+                self.log_base, data_id, model_id, arch_id, optim_id, seed_id, args.name)
 
         # Move model
         model = model.to(args.device)
@@ -99,6 +100,8 @@ class FlowExperiment(BaseExperiment):
         self.data_id = data_id
         self.model_id = model_id
         self.optim_id = optim_id
+        self.arch_id = arch_id
+        self.seed_id = seed_id
 
         # Store data loaders
         self.train_loader = train_loader
@@ -148,7 +151,7 @@ class FlowExperiment(BaseExperiment):
                     wandb.log({'eval/{}'.format(metric_name): metric_value}, step=epoch+1)
 
     def resume(self):
-        resume_path = os.path.join(self.log_base, self.data_id, self.model_id, self.optim_id, self.args.resume, 'check')
+        resume_path = os.path.join(self.log_base, self.data_id, self.model_id, self.arch_id, self.optim_id, self.seed_id, self.args.resume, 'check')
         self.checkpoint_load(resume_path)
         for epoch in range(self.current_epoch):
             
