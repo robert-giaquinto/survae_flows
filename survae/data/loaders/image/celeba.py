@@ -33,9 +33,9 @@ class CelebA32(TrainValidTestLoader):
             self.valid = SupervisedCelebADataset(root, split='valid', transform=Compose(trans_test), target_transform=one_hot_encode)
             self.test = SupervisedCelebADataset(root, split='test', transform=Compose(trans_test), target_transform=one_hot_encode)
         else:
-            self.train = CelebADataset(root, split='train', transform=Compose(trans_train))
-            self.valid = CelebADataset(root, split='valid', transform=Compose(trans_test))
-            self.test = CelebADataset(root, split='test', transform=Compose(trans_test))
+            self.train = UnsupervisedCelebADataset(root, split='train', transform=Compose(trans_train))
+            self.valid = UnsupervisedCelebADataset(root, split='valid', transform=Compose(trans_test))
+            self.test = UnsupervisedCelebADataset(root, split='test', transform=Compose(trans_test))
 
 
 class CelebA64(TrainValidTestLoader):
@@ -67,7 +67,7 @@ class CelebA64(TrainValidTestLoader):
             self.valid = SupervisedCelebADataset(root, split='valid', transform=Compose(trans_test), target_transform=one_hot_encode)
             self.test = SupervisedCelebADataset(root, split='test', transform=Compose(trans_test), target_transform=one_hot_encode)
         else:
-            self.train = CelebADataset(root, split='train', transform=Compose(trans_train))
-            self.valid = CelebADataset(root, split='valid', transform=Compose(trans_test))
-            self.test = CelebADataset(root, split='test', transform=Compose(trans_test))
+            self.train = UnsupervisedCelebADataset(root, split='train', transform=Compose(trans_train))
+            self.valid = UnsupervisedCelebADataset(root, split='valid', transform=Compose(trans_test))
+            self.test = UnsupervisedCelebADataset(root, split='test', transform=Compose(trans_test))
 
