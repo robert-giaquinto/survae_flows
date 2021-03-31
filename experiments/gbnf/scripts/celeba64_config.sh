@@ -9,13 +9,10 @@ exponential_lr=True
 early_stop=0
 eval_every=1
 
-boosted_components=1
 rho_init="decreasing"
 
-sr_scale_factor=8
-
 dataset=celeba64
-batch_size=8
+num_bits=5
 augmentation=eta
 
 dequant=flow
@@ -24,11 +21,10 @@ dequant_context=32
 
 num_scales=3
 num_steps=4
+actnorm=True
 coupling_network=transformer
 coupling_blocks=8
 coupling_channels=96
-coupling_depth=1            # only for convolutions and densenets
-coupling_gated_conv=False   # only for densenets
 coupling_dropout=0.0
 coupling_mixtures=4
 
@@ -38,8 +34,3 @@ lowres_encoder_channels=32
 lowres_encoder_blocks=1
 lowres_encoder_depth=3
 compression_ratio="0.5"
-
-latent_size=0
-vae_hidden_units=""
-base_distribution="c"
-

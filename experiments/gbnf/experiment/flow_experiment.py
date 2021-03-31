@@ -23,7 +23,7 @@ def add_exp_args(parser):
     # Experiment settings
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--device', type=str, default='cuda')
-    parser.add_argument('--parallel', type=str, default=None, choices={'dp'})
+    parser.add_argument('--parallel', type=str, default=None, choices={'dp', 'none'})
     parser.add_argument('--amp', type=eval, default=False, help="Use automatic mixed precision")
     parser.add_argument('--resume', type=str, default=None)
 

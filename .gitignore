@@ -12,3 +12,14 @@ experiments/image/log/*
 experiments/gbnf/log/*
 examples/results/*.png
 debug*.sh
+*_debug.sh
+experiments/gbnf/scripts/celeba32/*
+!experiments/gbnf/scripts/celeba32/create_scripts.sh
+experiments/gbnf/scripts/celeba64/*
+!experiments/gbnf/scripts/celeba64/create_scripts.sh
+experiments/gbnf/scripts/cifar10/*
+!experiments/gbnf/scripts/cifar10/create_scripts.sh
+experiments/gbnf/scripts/imagenet32/*
+!experiments/gbnf/scripts/imagenet32/create_scripts.sh
+experiments/gbnf/scripts/imagenet64/*
+!experiments/gbnf/scripts/imagenet64/create_scripts.sh

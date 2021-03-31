@@ -217,5 +217,3 @@ class BoostedFlowExperiment(FlowExperiment):
     def update_learning_rates(self):
         for c in range(self.num_components):
             self.optimizer.param_groups[c]['lr'] = self.args.lr if c == model.component else 0.0
-
-

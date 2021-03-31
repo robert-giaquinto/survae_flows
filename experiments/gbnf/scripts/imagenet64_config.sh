@@ -1,20 +1,19 @@
 #
 # ------------- Variables shared across experiments -------------
 #
-epochs=300
+epochs=20
 optimizer=adamax
 max_grad_norm=1.0
-warmup=10000
+warmup=20000
 exponential_lr=True
-early_stop=75
-eval_every=5
+early_stop=0
+eval_every=1
 
 rho_init="decreasing"
 
-# dataset and augmentations to images (flip horizontal, edge padding, small translations, and centering)
-dataset=cifar10
-num_bits=8
-augmentation=eta
+dataset=imagenet64
+num_bits=5
+augmentation=none
 
 dequant=flow
 dequant_steps=4

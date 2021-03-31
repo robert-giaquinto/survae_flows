@@ -16,4 +16,4 @@ class DataParallelDistribution(nn.DataParallel):
         return self.module.sample(*args, **kwargs)
 
     def sample_with_log_prob(self, *args, **kwargs):
-        return self.module.sample_with_log_prob(*args, **kwargs)
+        return self.module.sample_with_log_prob(*args, **kwargs)    
