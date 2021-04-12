@@ -40,10 +40,12 @@ class ConditionalBoostedFlow(BoostedFlow):
 
             # 2. sample x with replacement
             x_weights = self.normalize(fixed_nll, softmax=True, max_wt=0.1)
-            x_resampled = x[torch.multinomial(x_weights, x.size(0), replacement=True)]
+            resampled_ids = torch.multinomial(x_weights, x.size(0), replacement=True)
+            x_resampled = x[resampled_ids]
+            context_resampled = context[resampled_ids]
 
             # 3. compute new component's log_prob for the resampled x
-            log_prob = self.flows[self.component].log_prob(x_resampled, context)
+            log_prob = self.flows[self.component].log_prob(x_resampled, context_resampled)
 
         else:
             log_prob = mixture_log_prob(x, context, sum_over_fixed=False)
