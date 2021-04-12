@@ -36,7 +36,8 @@ def init_model(args, data_shape, cond_shape=None):
                            coupling_depth=args.coupling_depth,
                            coupling_dropout=args.coupling_dropout,
                            coupling_gated_conv=args.coupling_gated_conv,
-                           coupling_mixtures=args.coupling_mixtures)
+                           coupling_mixtures=args.coupling_mixtures,
+                           augment_size=args.augment_size)
         
     elif args.flow == "vae":
         model = VAECompressiveFlow(data_shape=data_shape,

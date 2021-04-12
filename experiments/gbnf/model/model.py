@@ -32,6 +32,7 @@ def add_model_args(parser):
     # flow parameters
     parser.add_argument('--num_scales', type=int, default=2)
     parser.add_argument('--num_steps', type=int, default=2)
+    parser.add_argument('--augment_size', type=int, default=None)
 
     # actnorm and if actnorm + 1x1conv should be conditional
     parser.add_argument('--actnorm', type=eval, default=True)

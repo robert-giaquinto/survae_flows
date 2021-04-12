@@ -23,3 +23,5 @@ experiments/gbnf/scripts/imagenet32/*
 !experiments/gbnf/scripts/imagenet32/create_scripts.sh
 experiments/gbnf/scripts/imagenet64/*
 !experiments/gbnf/scripts/imagenet64/create_scripts.sh
+experiments/gbnf/scripts/mnist/*
+!experiments/gbnf/scripts/mnist/create_scripts.sh

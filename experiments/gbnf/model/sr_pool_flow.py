@@ -4,7 +4,7 @@ from survae.flows import ConditionalFlow
 from survae.distributions import ConvNormal2d, StandardNormal, StandardHalfNormal, ConditionalNormal, StandardUniform
 from survae.transforms import VAE, ConditionalVAE, Reshape
 from survae.transforms import UniformDequantization, VariationalDequantization
-from survae.transforms import ScalarAffineBijection, Squeeze2d, Conv1x1, Slice, SimpleMaxPoolSurjection2d, ActNormBijection2d
+from survae.transforms import ScalarAffineBijection, Squeeze2d, Conv1x1, Slice, SimpleMaxPoolSurjection2d, ActNormBijection2d, Augment
 from survae.transforms import ConditionalConv1x1, ConditionalActNormBijection2d
 from survae.nn.nets import ConvEncoderNet, ConvDecoderNet, DenseNet, ContextUpsampler, UpsamplerNet
 
@@ -50,7 +50,8 @@ class SRPoolFlow(ConditionalFlow):
                  coupling_network,
                  dequant, dequant_steps, dequant_context,
                  coupling_blocks, coupling_channels, coupling_dropout,
-                 coupling_gated_conv=None, coupling_depth=None, coupling_mixtures=None):
+                 coupling_gated_conv=None, coupling_depth=None, coupling_mixtures=None,
+                 augment_size=None):
 
         if len(compression_ratio) == 1 and num_scales > 1:
             compression_ratio = [compression_ratio[0]] * num_scales
@@ -85,6 +86,13 @@ class SRPoolFlow(ConditionalFlow):
 
         # Change range from [0,1]^D to [-0.5, 0.5]^D
         transforms.append(ScalarAffineBijection(shift=-0.5))
+
+        # add in augmentation channels if desired
+        if augment_size is not None and augment_size > 0:
+            transforms.append(Augment(StandardUniform((augment_size, current_shape[1], current_shape[2])), x_size=augment_size))
+            current_shape = (current_shape[0] + augment_size,
+                             current_shape[1],
+                             current_shape[2])
 
         # Initial squeeze
         transforms.append(Squeeze2d())
