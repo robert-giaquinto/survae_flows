@@ -26,6 +26,7 @@ class ConditionalGBNF(ConditionalBoostedFlow):
                 path_check = '{}/check/checkpoint.pt'.format(args.pretrained_model)
                 with open(path_args, 'rb') as f:
                     pretrained_args = pickle.load(f)
+                    pretrained_args.resume = None
 
                 flow = init_model(args=pretrained_args, data_shape=data_shape, cond_shape=cond_shape)
             else:

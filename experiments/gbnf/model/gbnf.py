@@ -14,7 +14,10 @@ class GBNF(BoostedFlow):
     """
     Basic initializer for a gradient boosted normalizing flow
 
-    TODO allow for args to be lists, so that each flow in the GBNF can be non-homogenous
+    TODO:
+          1. Allow for args to be lists, so that each flow in the GBNF can be non-homogenous
+          2. Allow a pretrained boosted model to be extended with more components
+
     """
 
     def __init__(self, data_shape, num_bits, args):
@@ -26,6 +29,7 @@ class GBNF(BoostedFlow):
                 path_check = '{}/check/checkpoint.pt'.format(args.pretrained_model)
                 with open(path_args, 'rb') as f:
                     pretrained_args = pickle.load(f)
+                    pretrained_args.resume = None
 
                 flow = init_model(args=pretrained_args, data_shape=data_shape)
             else:
