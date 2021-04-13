@@ -67,5 +67,21 @@ class ConditionalFlow(ConditionalDistribution):
             
         return z
 
+    def interpolate(self, num_samples, context):
+        context = context.repeat(num_samples, 1, 1, 1)
+        if self.context_init: context = self.context_init(context)
+        encoded_context = context
+
+        z = self.base_dist.interpolate(num_samples, z1=None, z2=None)
+        for transform in reversed(self.transforms):            
+            if isinstance(transform, ConditionalTransform):
+                z = transform.inverse(z, encoded_context)
+            elif isinstance(transform, Transform):
+                z = transform.inverse(z)
+            elif isinstance(transform, ContextUpsampler):
+                if transform.direction == "inverse": encoded_context = transform.inverse(context)
+    
+        return z
+
     def sample_with_log_prob(self, context):
         raise RuntimeError("ConditionalFlow does not support sample_with_log_prob, see ConditionalInverseFlow instead.")

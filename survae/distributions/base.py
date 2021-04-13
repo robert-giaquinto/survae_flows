@@ -28,6 +28,22 @@ class Distribution(nn.Module):
         """
         raise NotImplementedError()
 
+    def interpolate(self, num_samples, z1=None, z2=None):
+        """
+        Generates samples from the distribution, interpolating between z1 and z2.
+        If z1 and z2 are None then it interpolates between 0 and a point on the shell (tails).
+
+        Args:
+            num_samples: int, number of samples to interpolate along.
+            z1:          first point to interpolate from.
+            z2:          final point to interpolate to.
+
+        Returns:
+            samples: Tensor, shape (num_samples, ...)
+        """
+        raise NotImplementedError()
+
+
     def sample_with_log_prob(self, num_samples):
         """Generates samples from the distribution together with their log probability.
 

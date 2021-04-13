@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -20,10 +21,19 @@ class StandardNormal(Distribution):
         return sum_except_batch(log_base+log_inner)
 
     def sample(self, num_samples, temperature=None):
-        if temperature is None:
-            return torch.randn(num_samples, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype)
+        temperature = 1.0 if temperature is None else temperature
+        z = torch.randn(num_samples, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype) * temperature
+        #z = torch.normal(mean=0, std=temperature, size=(num_samples, *self.shape), device=self.buffer.device, dtype=self.buffer.dtype)            
+        return z
+
+    def interpolate(self, num_samples, z1=None, z2=None):
+        if z1 is None or z2 is None:
+            z1 = torch.randn(1, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype) * 0.01
+            z2 = (torch.round(torch.rand(1, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype)) * 2.0) - 1.0
         else:
-            return torch.normal(mean=0, std=temperature, size=self.shape, device=self.buffer.device, dtype=self.buffer.dtype)
+            assert z1.shape == z2.shape
+
+        return torch.cat([w * z2 + (1.0 - w) * z1 for w in np.linspace(0, 1, num_samples)], dim=0)
 
 
 class DiagonalNormal(Distribution):
@@ -47,6 +57,16 @@ class DiagonalNormal(Distribution):
             return z
         else:
             return z * temperature
+
+    def interpolate(self, num_samples, z1=None, z2=None):
+        if z1 is None or z2 is None:
+            z1 = torch.randn(1, *self.shape, device=self.loc.device, dtype=self.loc.dtype) * 0.01 + self.loc
+            eps = (torch.round(torch.rand(1, *self.shape, device=self.loc.device, dtype=self.loc.dtype)) * 2.0) - 1.0
+            z2 = self.loc + self.log_scale.exp() * eps
+        else:
+            assert z1.shape == z2.shape
+
+        return torch.cat([w * z2 + (1.0 - w) * z1 for w in np.linspace(0, 1, num_samples)], dim=0)
             
 
 class ConvNormal2d(DiagonalNormal):

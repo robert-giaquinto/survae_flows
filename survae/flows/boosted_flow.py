@@ -146,6 +146,11 @@ class BoostedFlow(Distribution):
         z = self.flows[c].sample(num_samples_or_context, temperature=temperature)
         return z
 
+    def interpolate(self, num_samples, component="1:c", x1=None, x2=None):
+        c = self._sample_component(component)
+        z = self.flows[c].interpolate(num_samples, x1, x2)
+        return z
+
     def sample_with_log_prob(self, num_samples):
         raise RuntimeError("Flow does not support sample_with_log_prob, see InverseFlow instead.")
 

@@ -114,4 +114,10 @@ class ConditionalBoostedFlow(BoostedFlow):
                 log_prob = torch.logsumexp(unnormalized, dim=1)
 
         return log_prob
+
+    def interpolate(self, num_samples, context, component="1:c"):
+        c = self._sample_component(component)
+        z = self.flows[c].interpolate(num_samples, context)
+        return z
+
         

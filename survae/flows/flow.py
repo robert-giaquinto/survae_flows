@@ -40,3 +40,18 @@ class Flow(Distribution):
 
     def sample_with_log_prob(self, num_samples):
         raise RuntimeError("Flow does not support sample_with_log_prob, see InverseFlow instead.")
+
+    def interpolate(self, num_samples, x1=None, x2=None):
+        if x1 is not None and x2 is not None:
+            for transform in self.transforms:
+                x1, _ = transform(x1)
+                x2, _ = transform(x2)
+
+            z1, z2 = x1, x2
+        
+        z = self.base_dist.interpolate(num_samples, z1, z2)
+        for transform in reversed(self.transforms):
+            z = transform.inverse(z)
+            
+        return z
+
