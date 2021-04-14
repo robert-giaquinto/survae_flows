@@ -76,12 +76,12 @@ class SRPoolFlow(ConditionalFlow):
                                                  num_steps=dequant_steps,
                                                  coupling_network=coupling_network,
                                                  num_context=dequant_context,
-                                                 num_blocks=4,
+                                                 num_blocks=2,
                                                  mid_channels=coupling_channels,
                                                  depth=3,
                                                  dropout=0.0,
                                                  gated_conv=False,
-                                                 num_mixtures=4)
+                                                 num_mixtures=coupling_mixtures)
             transforms.append(VariationalDequantization(encoder=dequantize_flow, num_bits=num_bits))
 
         # Change range from [0,1]^D to [-0.5, 0.5]^D
