@@ -30,6 +30,8 @@ class GBNF(BoostedFlow):
                 with open(path_args, 'rb') as f:
                     pretrained_args = pickle.load(f)
                     pretrained_args.resume = None
+                    if hasattr(pretrained_args, 'augment_size') == False:
+                        pretrained_args.augment_size = 0
 
                 flow = init_model(args=pretrained_args, data_shape=data_shape)
             else:

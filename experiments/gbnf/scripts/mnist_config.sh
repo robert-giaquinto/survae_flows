@@ -16,16 +16,17 @@ num_bits=8
 augmentation=none
 
 dequant=flow
-dequant_steps=4
+dequant_steps=2
 dequant_context=32
 
 num_scales=2
 num_steps=4
+
 actnorm=True
 augment_size=1
 
 coupling_network=transformer
-coupling_blocks=8
+coupling_blocks=6
 coupling_channels=64
 coupling_dropout=0.0
 coupling_mixtures=4

@@ -22,7 +22,10 @@ dequant_context=32
 
 num_scales=3
 num_steps=4
+
 actnorm=True
+augment_size=0
+
 coupling_network=transformer
 coupling_blocks=8
 coupling_channels=96

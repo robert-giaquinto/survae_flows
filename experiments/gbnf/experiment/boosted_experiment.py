@@ -20,7 +20,7 @@ from experiments.gbnf.optim import get_optim
 
 # Logging frameworks
 from torch.utils.tensorboard import SummaryWriter
-#import wandb
+import wandb
 
     
 class BoostedFlowExperiment(FlowExperiment):

@@ -6,8 +6,8 @@
 #SBATCH --mail-user=smit7982@umn.edu 
 #SBATCH -p v100
 #SBATCH --gres=gpu:v100:1
-#SBATCH -o DATE_DATASET_NUMBITSbits_srSRXx_FLOW_scalesSCALES_stepsSTEPS_transformerTRANSFORMER_seedSEED.log
-#SBATCH --job-name=DATE_DATASET_NUMBITSbits_srSRXx_FLOW_scalesSCALES_stepsSTEPS_transformerTRANSFORMER_seedSEED
+#SBATCH -o DATE_DATASET_NUMBITSbits_boostedBOOSTED_srSRXx_FLOW_scalesSCALES_stepsSTEPS_transformerTRANSFORMER_seedSEED.log
+#SBATCH --job-name=DATE_DATASET_NUMBITSbits_boostedBOOSTED_srSRXx_FLOW_scalesSCALES_stepsSTEPS_transformerTRANSFORMER_seedSEED
 module unload python
 module load python/3.7.1_anaconda
 module load python3/3.7.1_anaconda
@@ -28,13 +28,12 @@ amp=True
 parallel=none
 num_workers=4
 
+log_wandb=WANDB
 seed=SEED
 batch_size=BATCHSIZE
-log_wandb=WANDB
-
 flow=FLOW
 sr_scale_factor=SRX
-boosted_components=1
+boosted_components=BOOSTED
 
 # --resume                    "2021-03-17_01-22-11" \
 # --name                      "2021-03-17_01-22-11_cont1" \

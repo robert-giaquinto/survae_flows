@@ -8,6 +8,7 @@ BATCHSIZE=256
 
 SRX=4
 TRANSFORMER="${coupling_blocks}b${coupling_channels}c${coupling_mixtures}m"
+WANDB=True
 
 for FLOW in none; do
     for SEED in 101 102 103; do
@@ -23,6 +24,7 @@ for FLOW in none; do
         sed -i -e "s/SRX/${SRX}/g" ${FNAME};
         sed -i -e "s/BATCHSIZE/${BATCHSIZE}/g" ${FNAME};
         sed -i -e "s/DATE/${DATE}/g" ${FNAME};
+        sed -i -e "s/WANDB/${WANDB}/g" ${FNAME};
     done;
 done;
 

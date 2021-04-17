@@ -2,14 +2,15 @@ source ~/super_resolution/survae_flows/experiments/gbnf/scripts/celeba32_config.
 DATE=$(date '+%Y_%m_%d')
 
 # Set batch size depending GPU config
-TEMPLATE="../sr_template_2_v100.sh"
-#TEMPLATE="../sr_template_1_v100.sh"
+#TEMPLATE="../sr_template_2_v100.sh"
+TEMPLATE="../sr_template_1_v100.sh"
+
 BATCHSIZE=64
-
-SRX=8
+SRX=4
 TRANSFORMER="${coupling_blocks}b${coupling_channels}c${coupling_mixtures}m"
+WANDB=True
 
-for FLOW in none slice mvae; do
+for FLOW in slice mvae; do
     for SEED in 101 102 103; do
         FNAME=${dataset}_${num_bits}bits_sr${SRX}x_${FLOW}_scales${num_scales}_steps${num_steps}_transformer${TRANSFORMER}_seed${SEED}.sh;
         cp ${TEMPLATE} ${FNAME};
@@ -23,6 +24,7 @@ for FLOW in none slice mvae; do
         sed -i -e "s/SRX/${SRX}/g" ${FNAME};
         sed -i -e "s/BATCHSIZE/${BATCHSIZE}/g" ${FNAME};
         sed -i -e "s/DATE/${DATE}/g" ${FNAME};
+        sed -i -e "s/WANDB/${WANDB}/g" ${FNAME};
     done;
 done;
 

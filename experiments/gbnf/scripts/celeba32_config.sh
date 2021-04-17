@@ -21,7 +21,9 @@ num_scales=3
 num_steps=4
 # compressive and sliced flows reduce dimensionality by half at each scale:
 compression_ratio="0.5"
+
 actnorm=True
+augment_size=0
 
 # coupling architecture
 coupling_network=transformer

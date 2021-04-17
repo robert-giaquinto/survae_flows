@@ -15,7 +15,7 @@ from .base import BaseExperiment
 
 # Logging frameworks
 from torch.utils.tensorboard import SummaryWriter
-#import wandb
+import wandb
 
 
 def add_exp_args(parser):

@@ -23,17 +23,18 @@ source ~/super_resolution/survae_flows/experiments/gbnf/scripts/DATASET_config.s
 printf "\nTraining Flows with base arguments:\n"
 cat ~/super_resolution/survae_flows/experiments/gbnf/scripts/DATASET_config.sh
 
-seed=SEED
-
 device=cuda
 amp=True
 parallel=dp
 num_workers=8
-batch_size=BATCHSIZE
+boosted_components=1
 
+seed=SEED
+batch_size=BATCHSIZE
+log_wandb=WANDB
 flow=FLOW
 sr_scale_factor=SRX
-boosted_components=1
+
 
 # --resume                    "2021-03-17_01-22-11" \
 # --name                      "2021-03-17_01-22-11_cont1" \
@@ -43,6 +44,7 @@ time python experiments/gbnf/train.py \
     --parallel                  ${parallel} \
     --amp                       ${amp} \
     --seed                      ${seed} \
+    --log_wandb                 ${log_wandb} \
     \
     --dataset                   ${dataset} \
     --num_bits                  ${num_bits} \
@@ -71,6 +73,8 @@ time python experiments/gbnf/train.py \
     --num_steps                 ${num_steps} \
     \
     --actnorm                   ${actnorm} \
+    --augment_size              ${augment_size} \
+    \
     --conditional_channels      ${conditional_channels} \
     --lowres_upsampler_channels ${lowres_upsampler_channels} \
     --lowres_encoder_channels   ${lowres_encoder_channels} \

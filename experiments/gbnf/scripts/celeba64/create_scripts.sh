@@ -8,8 +8,9 @@ BATCHSIZE=16
 
 SRX=8
 TRANSFORMER="${coupling_blocks}b${coupling_channels}c${coupling_mixtures}m"
+WANDB=True
 
-for FLOW in none slice mvae; do
+for FLOW in slice mvae; do
     for SEED in 101 102 103; do
         FNAME=${dataset}_${num_bits}bits_sr${SRX}x_${FLOW}_scales${num_scales}_steps${num_steps}_transformer${TRANSFORMER}_seed${SEED}.sh;
         cp ${TEMPLATE} ${FNAME};
@@ -23,6 +24,7 @@ for FLOW in none slice mvae; do
         sed -i -e "s/SRX/${SRX}/g" ${FNAME};
         sed -i -e "s/BATCHSIZE/${BATCHSIZE}/g" ${FNAME};
         sed -i -e "s/DATE/${DATE}/g" ${FNAME};
+        sed -i -e "s/WANDB/${WANDB}/g" ${FNAME};
     done;
 done;
 
