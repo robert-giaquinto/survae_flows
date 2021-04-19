@@ -3,13 +3,14 @@ from survae.utils import sum_except_batch
 from survae.transforms.bijections.functional.mixtures import gaussian_mixture_transform, logistic_mixture_transform, censored_logistic_mixture_transform
 from survae.transforms.bijections.functional.mixtures import get_mixture_params, get_flowpp_params
 from survae.transforms.bijections.coupling import CouplingBijection
-from survae.transforms.bijections.elementwise_nonlinear import SigmoidInverse
 
 
 class GaussianMixtureCouplingBijection(CouplingBijection):
 
-    def __init__(self, coupling_net, num_mixtures, split_dim=1, num_condition=None):
-        super(GaussianMixtureCouplingBijection, self).__init__(coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_mixtures, split_dim=1, num_condition=None, flip=False):
+        super(GaussianMixtureCouplingBijection, self).__init__(
+            coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
+        
         self.num_mixtures = num_mixtures
         self.set_bisection_params()
 
@@ -49,8 +50,10 @@ class GaussianMixtureCouplingBijection(CouplingBijection):
 
 class LogisticMixtureCouplingBijection(CouplingBijection):
 
-    def __init__(self, coupling_net, num_mixtures, split_dim=1, num_condition=None):
-        super(LogisticMixtureCouplingBijection, self).__init__(coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_mixtures, split_dim=1, num_condition=None, flip=False):
+        super(LogisticMixtureCouplingBijection, self).__init__(
+            coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
+        
         self.num_mixtures = num_mixtures
         self.set_bisection_params()
 
@@ -90,8 +93,10 @@ class LogisticMixtureCouplingBijection(CouplingBijection):
 
 class LogisticMixtureAffineCouplingBijection(CouplingBijection):
 
-    def __init__(self, coupling_net, num_mixtures, split_dim=1, num_condition=None, scale_fn=lambda s: torch.exp(s)):
-        super(LogisticMixtureAffineCouplingBijection, self).__init__(coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_mixtures, split_dim=1, num_condition=None, scale_fn=lambda s: torch.exp(s), flip=False):
+        super(LogisticMixtureAffineCouplingBijection, self).__init__(
+            coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
+        
         self.num_mixtures = num_mixtures
         self.set_bisection_params()
         assert callable(scale_fn)
@@ -146,8 +151,10 @@ class LogisticMixtureAffineCouplingBijection(CouplingBijection):
 
 class CensoredLogisticMixtureCouplingBijection(CouplingBijection):
 
-    def __init__(self, coupling_net, num_mixtures, num_bins, split_dim=1, num_condition=None):
-        super(CensoredLogisticMixtureCouplingBijection, self).__init__(coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_mixtures, num_bins, split_dim=1, num_condition=None, flip=False):
+        super(CensoredLogisticMixtureCouplingBijection, self).__init__(
+            coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
+        
         self.num_mixtures = num_mixtures
         self.num_bins = num_bins
         self.set_bisection_params()

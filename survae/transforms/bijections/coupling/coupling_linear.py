@@ -31,8 +31,8 @@ class AffineCouplingBijection(CouplingBijection):
         scale_fn: callable, the transform to obtain the scale.
     '''
 
-    def __init__(self, coupling_net, split_dim=1, num_condition=None, scale_fn=lambda s: torch.exp(s)):
-        super(AffineCouplingBijection, self).__init__(coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, split_dim=1, num_condition=None, scale_fn=lambda s: torch.exp(s), flip=False):
+        super(AffineCouplingBijection, self).__init__(coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
         assert callable(scale_fn)
         self.scale_fn = scale_fn
 

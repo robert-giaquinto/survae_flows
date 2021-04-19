@@ -48,3 +48,30 @@ def repeat_rows(x, num_reps):
     x = x.unsqueeze(1)
     x = x.expand(shape[0], num_reps, *shape[1:])
     return merge_leading_dims(x, num_dims=2)
+
+
+def checkerboard_split(x, flip=False):
+    b, c, h, w = x.shape
+    mask = checkerboard_mask(b, c, h, w, x.device, flip=flip)        
+    x1 = torch.masked_select(x, mask).view(b, c, h, w // 2)
+    x2 = torch.masked_select(x, mask == False).view(b, c, h, w // 2)
+    return x1, x2
+
+
+def checkerboard_mask(b, c, h, w, device, flip=False):
+    x, y = torch.arange(h, dtype=torch.int32, device=device), torch.arange(w, dtype=torch.int32, device=device)
+    xx, yy = torch.meshgrid(x, y)
+    mask = torch.fmod(xx + yy, 2)
+    mask = mask.to(torch.int32).view(1, 1, h, w) > 0
+    if flip:
+        mask = mask == False
+
+    return mask
+
+
+def checkerboard_inverse(z1, z2, flip=False):
+    b, c, h, w = z1.shape
+    mask = checkerboard_mask(b, c, h, w * 2, z1.device, flip=flip).to(z1.dtype)
+    x = torch.repeat_interleave(z1, 2, dim=3) * mask + \
+        torch.repeat_interleave(z2, 2, dim=3) * (1.0 - mask)
+    return x

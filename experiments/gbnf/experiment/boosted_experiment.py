@@ -191,8 +191,6 @@ class BoostedFlowExperiment(FlowExperiment):
                 self.log_path, self.model.component, self.component_epoch, self.current_epoch, self.args.seed)
             samples = self.model.sample(context.to(self.args.device), component=self.model.component, temperature=temperature)
             self.save_images(samples, path_samples)
-
-        print(samples.shape, samples.max().item(), samples.min().item())
             
     def _sample_fn(self, components, temperature=None):
         if components == "1:c":

@@ -7,8 +7,10 @@ from survae.transforms.bijections.conditional.coupling import ConditionalCouplin
 
 class ConditionalGaussianMixtureCouplingBijection(ConditionalCouplingBijection):
 
-    def __init__(self, coupling_net, num_mixtures, context_net=None, split_dim=1, num_condition=None):
-        super(ConditionalGaussianMixtureCouplingBijection, self).__init__(coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_mixtures, context_net=None, split_dim=1, num_condition=None, flip=False):
+        super(ConditionalGaussianMixtureCouplingBijection, self).__init__(
+            coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
+        
         self.num_mixtures = num_mixtures
         self.set_bisection_params()
 
@@ -48,9 +50,10 @@ class ConditionalGaussianMixtureCouplingBijection(ConditionalCouplingBijection):
 
 class ConditionalLogisticMixtureCouplingBijection(ConditionalCouplingBijection):
 
-    def __init__(self, coupling_net, num_mixtures, context_net=None, split_dim=1, num_condition=None):
+    def __init__(self, coupling_net, num_mixtures, context_net=None, split_dim=1, num_condition=None, flip=False):
         super(ConditionalLogisticMixtureCouplingBijection, self).__init__(
-            coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition)
+            coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
+        
         self.num_mixtures = num_mixtures
         self.set_bisection_params()
 
@@ -90,9 +93,10 @@ class ConditionalLogisticMixtureCouplingBijection(ConditionalCouplingBijection):
 
 class ConditionalLogisticMixtureAffineCouplingBijection(ConditionalCouplingBijection):
 
-    def __init__(self, coupling_net, num_mixtures, context_net=None, split_dim=1, num_condition=None, scale_fn=lambda s: torch.exp(s)):
+    def __init__(self, coupling_net, num_mixtures, context_net=None, split_dim=1, num_condition=None, scale_fn=lambda s: torch.exp(s), flip=False):
         super(ConditionalLogisticMixtureAffineCouplingBijection, self).__init__(
-            coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition)
+            coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
+        
         self.num_mixtures = num_mixtures
         self.set_bisection_params()
         assert callable(scale_fn)
@@ -145,8 +149,9 @@ class ConditionalLogisticMixtureAffineCouplingBijection(ConditionalCouplingBijec
 
 class ConditionalCensoredLogisticMixtureCouplingBijection(ConditionalCouplingBijection):
 
-    def __init__(self, coupling_net, num_mixtures, num_bins, context_net=None, split_dim=1, num_condition=None):
-        super(ConditionalCensoredLogisticMixtureCouplingBijection, self).__init__(coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_mixtures, num_bins, context_net=None, split_dim=1, num_condition=None, flip=False):
+        super(ConditionalCensoredLogisticMixtureCouplingBijection, self).__init__(
+            coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
         self.num_mixtures = num_mixtures
         self.num_bins = num_bins
         self.set_bisection_params()

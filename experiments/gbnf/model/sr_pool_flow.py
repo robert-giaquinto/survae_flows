@@ -8,7 +8,7 @@ from survae.transforms import ScalarAffineBijection, Squeeze2d, Conv1x1, Slice, 
 from survae.transforms import ConditionalConv1x1, ConditionalActNormBijection2d
 from survae.nn.nets import ConvEncoderNet, ConvDecoderNet, DenseNet, ContextUpsampler, UpsamplerNet
 
-from model.coupling import SRCoupling, SRMixtureCoupling
+from model.coupling import SRCoupling, SRMixtureCoupling, Coupling, MixtureCoupling
 from model.dequantization_flow import DequantizationFlow
 
 
@@ -29,7 +29,6 @@ class ContextInit(nn.Module):
                                    dropout=dropout,
                                    gated_conv=False,
                                    zero_init=False)
-
         
     def forward(self, context):
         context, _ = self.dequant(context)
@@ -51,7 +50,7 @@ class SRPoolFlow(ConditionalFlow):
                  dequant, dequant_steps, dequant_context,
                  coupling_blocks, coupling_channels, coupling_dropout,
                  coupling_gated_conv=None, coupling_depth=None, coupling_mixtures=None,
-                 augment_size=None):
+                 augment_size=None, checkerboard_scales=[]):
 
         if len(compression_ratio) == 1 and num_scales > 1:
             compression_ratio = [compression_ratio[0]] * num_scales
@@ -78,14 +77,22 @@ class SRPoolFlow(ConditionalFlow):
                                                  num_context=dequant_context,
                                                  num_blocks=4,
                                                  mid_channels=coupling_channels,
-                                                 depth=3,
+                                                 depth=2,
                                                  dropout=0.0,
                                                  gated_conv=False,
-                                                 num_mixtures=coupling_mixtures)
+                                                 num_mixtures=coupling_mixtures,
+                                                 checkerboard=True)
             transforms.append(VariationalDequantization(encoder=dequantize_flow, num_bits=num_bits))
 
         # Change range from [0,1]^D to [-0.5, 0.5]^D
         transforms.append(ScalarAffineBijection(shift=-0.5))
+
+        # Initial squeeze
+        if (current_shape[1] > 32 and current_shape[2] > 32) or 0 not in checkerboard_scales:
+            transforms.append(Squeeze2d())
+            current_shape = (current_shape[0] * 4,
+                             current_shape[1] // 2,
+                             current_shape[2] // 2)
 
         # add in augmentation channels if desired
         if augment_size is not None and augment_size > 0:
@@ -94,16 +101,14 @@ class SRPoolFlow(ConditionalFlow):
                              current_shape[1],
                              current_shape[2])
 
-        # Initial squeeze
-        transforms.append(Squeeze2d())
-        current_shape = (current_shape[0] * 4,
-                         current_shape[1] // 2,
-                         current_shape[2] // 2)
-
         for scale in range(num_scales):
 
-            # reshape the context to the current size for this scale
-            context_upsampler_net = UpsamplerNet(in_channels=lowres_encoder_channels, out_shape=current_shape, mid_channels=lowres_upsampler_channels)
+            # First and Third scales use checkerboard split pattern
+            checkerboard = scale in checkerboard_scales
+            context_out_shape = (current_shape[0], current_shape[1], current_shape[2] // 2) if checkerboard else current_shape
+
+            # reshape the context to the current size for all flow steps at this scale
+            context_upsampler_net = UpsamplerNet(in_channels=lowres_encoder_channels, out_shape=context_out_shape, mid_channels=lowres_upsampler_channels)
             transforms.append(ContextUpsampler(context_net=context_upsampler_net, direction='forward'))    
             
             for step in range(num_steps):
@@ -114,7 +119,7 @@ class SRPoolFlow(ConditionalFlow):
                 else:
                     if actnorm: transforms.append(ConditionalActNormBijection2d(cond_shape=current_shape, out_channels=current_shape[0], mid_channels=conditional_channels))
                     transforms.append(ConditionalConv1x1(cond_shape=current_shape, out_channels=current_shape[0], mid_channels=conditional_channels, slogdet_cpu=True))
-                    
+
                 if coupling_network in ["conv", "densenet"]:
                     transforms.append(SRCoupling(x_size=current_shape, 
                                                  y_size=current_shape,
@@ -123,14 +128,17 @@ class SRPoolFlow(ConditionalFlow):
                                                  num_blocks=coupling_blocks,
                                                  dropout=coupling_dropout,
                                                  gated_conv=coupling_gated_conv,
-                                                 coupling_network=coupling_network))
+                                                 coupling_network=coupling_network,
+                                                 checkerboard=checkerboard))
+                    
                 elif coupling_network == "transformer":
                     transforms.append(SRMixtureCoupling(x_size=current_shape,
                                                         y_size=current_shape,
                                                         mid_channels=coupling_channels,
                                                         dropout=coupling_dropout,
                                                         num_blocks=coupling_blocks,
-                                                        num_mixtures=coupling_mixtures))
+                                                        num_mixtures=coupling_mixtures,
+                                                        checkerboard=checkerboard))
 
             # Upsample context (for the previous flows, only if moving in the inverse direction)
             transforms.append(ContextUpsampler(context_net=context_upsampler_net, direction='inverse'))

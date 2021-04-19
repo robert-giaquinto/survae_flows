@@ -302,12 +302,12 @@ class FlowExperiment(BaseExperiment):
 
         if get_new_batch:
             # save real samples
-            path_true_samples = '{}/samples/true_ep{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
+            path_true_samples = '{}/samples/true_e{}_s{}.png'.format(self.log_path, self.current_epoch+1, self.args.seed)
             self.save_images(imgs, path_true_samples)
 
     # def _sample_fn(self, checkpoint):
     def _sample_fn(self, temperature=None):
-        path_samples = '{}/samples/sample_e{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
+        path_samples = '{}/samples/sample_e{}_s{}.png'.format(self.log_path, self.current_epoch+1, self.args.seed)
         samples = self.model.sample(self.args.samples, temperature=temperature)
         self.save_images(samples, path_samples)
 
@@ -315,11 +315,11 @@ class FlowExperiment(BaseExperiment):
     def _cond_sample_fn(self, context, temperature=None, save_context=True):
         if save_context:
             # save low-resolution samples
-            path_context = '{}/samples/context_e{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
+            path_context = '{}/samples/context_e{}_s{}.png'.format(self.log_path, self.current_epoch+1, self.args.seed)
             self.save_images(context, path_context)
 
         # save samples from model conditioned on context
-        path_samples = '{}/samples/sample_e{}_s{}.png'.format(self.log_path, self.current_epoch, self.args.seed)
+        path_samples = '{}/samples/sample_e{}_s{}.png'.format(self.log_path, self.current_epoch+1, self.args.seed)
         samples = self.model.sample(context.to(self.args.device), temperature=temperature)
         self.save_images(samples, path_samples)
 

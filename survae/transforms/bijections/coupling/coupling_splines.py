@@ -7,8 +7,10 @@ from survae.transforms.bijections.coupling import CouplingBijection
 
 class LinearSplineCouplingBijection(CouplingBijection):
 
-    def __init__(self, coupling_net, num_bins, split_dim=1, num_condition=None):
-        super(LinearSplineCouplingBijection, self).__init__(coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_bins, split_dim=1, num_condition=None, flip=False):
+        super(LinearSplineCouplingBijection, self).__init__(
+            coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
+        
         self.num_bins = num_bins
 
     def _output_dim_multiplier(self):
@@ -28,8 +30,10 @@ class LinearSplineCouplingBijection(CouplingBijection):
 
 class QuadraticSplineCouplingBijection(CouplingBijection):
 
-    def __init__(self, coupling_net, num_bins, split_dim=1, num_condition=None):
-        super(QuadraticSplineCouplingBijection, self).__init__(coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_bins, split_dim=1, num_condition=None, flip=False):
+        super(QuadraticSplineCouplingBijection, self).__init__(
+            coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
+        
         self.num_bins = num_bins
 
     def _output_dim_multiplier(self):
@@ -51,8 +55,10 @@ class QuadraticSplineCouplingBijection(CouplingBijection):
 
 class CubicSplineCouplingBijection(CouplingBijection):
 
-    def __init__(self, coupling_net, num_bins, split_dim=1, num_condition=None):
-        super(CubicSplineCouplingBijection, self).__init__(coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_bins, split_dim=1, num_condition=None, flip=False):
+        super(CubicSplineCouplingBijection, self).__init__(
+            coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
+        
         self.num_bins = num_bins
 
     def _output_dim_multiplier(self):
@@ -90,8 +96,10 @@ class CubicSplineCouplingBijection(CouplingBijection):
 
 class RationalQuadraticSplineCouplingBijection(CouplingBijection):
 
-    def __init__(self, coupling_net, num_bins, split_dim=1, num_condition=None):
-        super(RationalQuadraticSplineCouplingBijection, self).__init__(coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_bins, split_dim=1, num_condition=None, flip=False):
+        super(RationalQuadraticSplineCouplingBijection, self).__init__(
+            coupling_net=coupling_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
+        
         self.num_bins = num_bins
 
     def _output_dim_multiplier(self):

@@ -7,8 +7,9 @@ from survae.transforms.bijections.conditional.coupling import ConditionalCouplin
 
 class ConditionalLinearSplineCouplingBijection(ConditionalCouplingBijection):
 
-    def __init__(self, coupling_net, num_bins, context_net=None, split_dim=1, num_condition=None):
-        super(ConditionalLinearSplineCouplingBijection, self).__init__(coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_bins, context_net=None, split_dim=1, num_condition=None, flip=False):
+        super(ConditionalLinearSplineCouplingBijection, self).__init__(
+            coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
         self.num_bins = num_bins
 
     def _output_dim_multiplier(self):
@@ -28,8 +29,9 @@ class ConditionalLinearSplineCouplingBijection(ConditionalCouplingBijection):
 
 class ConditionalQuadraticSplineCouplingBijection(ConditionalCouplingBijection):
 
-    def __init__(self, coupling_net, num_bins, context_net=None, split_dim=1, num_condition=None):
-        super(ConditionalQuadraticSplineCouplingBijection, self).__init__(coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_bins, context_net=None, split_dim=1, num_condition=None, flip=False):
+        super(ConditionalQuadraticSplineCouplingBijection, self).__init__(
+            coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
         self.num_bins = num_bins
 
     def _output_dim_multiplier(self):
@@ -51,8 +53,9 @@ class ConditionalQuadraticSplineCouplingBijection(ConditionalCouplingBijection):
 
 class ConditionalCubicSplineCouplingBijection(ConditionalCouplingBijection):
 
-    def __init__(self, coupling_net, num_bins, context_net=None, split_dim=1, num_condition=None):
-        super(ConditionalCubicSplineCouplingBijection, self).__init__(coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_bins, context_net=None, split_dim=1, num_condition=None, flip=False):
+        super(ConditionalCubicSplineCouplingBijection, self).__init__(
+            coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
         self.num_bins = num_bins
 
     def _output_dim_multiplier(self):
@@ -90,8 +93,9 @@ class ConditionalCubicSplineCouplingBijection(ConditionalCouplingBijection):
 
 class ConditionalRationalQuadraticSplineCouplingBijection(ConditionalCouplingBijection):
 
-    def __init__(self, coupling_net, num_bins, context_net=None, split_dim=1, num_condition=None):
-        super(ConditionalRationalQuadraticSplineCouplingBijection, self).__init__(coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition)
+    def __init__(self, coupling_net, num_bins, context_net=None, split_dim=1, num_condition=None, flip=False):
+        super(ConditionalRationalQuadraticSplineCouplingBijection, self).__init__(
+            coupling_net=coupling_net, context_net=context_net, split_dim=split_dim, num_condition=num_condition, flip=flip)
         self.num_bins = num_bins
 
     def _output_dim_multiplier(self):
