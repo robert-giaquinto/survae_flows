@@ -28,6 +28,7 @@ class BaseExperiment(object):
 
         # Initialize
         self.current_epoch = 0
+        self.component_epoch = 0
         self.train_metrics = {}
         self.eval_metrics = {}
         self.eval_epochs = []
@@ -131,6 +132,7 @@ class BaseExperiment(object):
 
     def checkpoint_save(self):
         checkpoint = {'current_epoch': self.current_epoch,
+                      'component_epoch': self.component_epoch,
                       'train_metrics': self.train_metrics,
                       'eval_metrics': self.eval_metrics,
                       'eval_epochs': self.eval_epochs,
@@ -149,6 +151,7 @@ class BaseExperiment(object):
             checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'))
 
         self.current_epoch = checkpoint['current_epoch']
+        self.component_epoch = checkpoint['component_epoch']
         self.train_metrics = checkpoint['train_metrics']
         self.eval_metrics = checkpoint['eval_metrics']
         self.eval_epochs = checkpoint['eval_epochs']

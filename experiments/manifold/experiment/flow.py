@@ -1,3 +1,4 @@
+import math
 import torch
 import torchvision.utils as vutils
 
@@ -180,7 +181,7 @@ class FlowExperiment(BaseExperiment):
         if self.args.annealing_schedule > 0 and self.args.compression == "vae" and len(self.args.base_distributions) > 1:
             return max(min([(epoch * 1.0) / max([self.args.annealing_schedule, 1.0]), max_beta]), min_beta)
         else:
-            return None
+            return 1.0
 
     def run(self):
         if self.args.resume:

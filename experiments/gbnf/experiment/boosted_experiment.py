@@ -75,7 +75,7 @@ class BoostedFlowExperiment(FlowExperiment):
 
                 # Log
                 self.save_metrics()
-                self.log_fn(epoch, train_dict, eval_dict)
+                self.log_fn(self.current_epoch, train_dict, eval_dict)
 
                 # Checkpoint
                 self.current_epoch += 1
@@ -191,6 +191,8 @@ class BoostedFlowExperiment(FlowExperiment):
                 self.log_path, self.model.component, self.component_epoch, self.current_epoch, self.args.seed)
             samples = self.model.sample(context.to(self.args.device), component=self.model.component, temperature=temperature)
             self.save_images(samples, path_samples)
+
+        print(samples.shape, samples.max().item(), samples.min().item())
             
     def _sample_fn(self, components, temperature=None):
         if components == "1:c":
@@ -217,3 +219,4 @@ class BoostedFlowExperiment(FlowExperiment):
     def update_learning_rates(self):
         for c in range(self.num_components):
             self.optimizer.param_groups[c]['lr'] = self.args.lr if c == model.component else 0.0
+
