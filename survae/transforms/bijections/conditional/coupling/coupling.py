@@ -60,17 +60,18 @@ class ConditionalCouplingBijection(ConditionalBijection):
         return z, ldj
 
     def inverse(self, z, context):
-        if self.context_net: context = self.context_net(context)
-        id, z2 = self.split_input(z)
+        with torch.no_grad():
+            if self.context_net: context = self.context_net(context)
+            id, z2 = self.split_input(z)
 
-        if context.shape[2] == 1 and context.shape[3] == 1:
-            context = id + context
-        else:
-            context = torch.cat([id, context], dim=1)
+            if context.shape[2] == 1 and context.shape[3] == 1:
+                context = id + context
+            else:
+                context = torch.cat([id, context], dim=1)
 
-        elementwise_params = self.coupling_net(context)
-        x2 = self._elementwise_inverse(z2, elementwise_params)
-        x = self.combine_output(id, x2)
+            elementwise_params = self.coupling_net(context)
+            x2 = self._elementwise_inverse(z2, elementwise_params)
+            x = self.combine_output(id, x2)
         return x
 
     def _output_dim_multiplier(self):
