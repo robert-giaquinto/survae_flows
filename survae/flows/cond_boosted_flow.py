@@ -115,9 +115,9 @@ class ConditionalBoostedFlow(BoostedFlow):
 
         return log_prob
 
-    def interpolate(self, num_samples, context, component="1:c"):
+    def interpolate(self, num_samples, context, component="1:c", x=None):
         c = self._sample_component(component)
-        z = self.flows[c].interpolate(num_samples, context)
+        z = self.flows[c].interpolate(num_samples, context, x=x)
         return z
 
         
