@@ -67,12 +67,38 @@ class ConditionalFlow(ConditionalDistribution):
             
         return z
 
-    def interpolate(self, num_samples, context):
+    def interpolate(self, num_samples, context, x=None):
+        """
+        Interpolate num_samples across the latent space between given a context
+        
+        If an input x is given, then x will be encoded into the latent space and the interpolation path
+        will pass along x.
+        """
+        
+        # encode 
+        if x is not None:
+            context_copy = torch.clone(context)
+            if self.context_init: context_copy = self.context_init(context_copy)
+            encoded_context_copy = context_copy
+
+            # encode x to the latent space
+            for transform in self.transforms:
+                if isinstance(transform, ConditionalTransform):
+                    x, _ = transform(x, encoded_context_copy)
+                elif isinstance(transform, Transform):
+                    x, _ = transform(x)
+                elif isinstance(transform, ContextUpsampler):
+                    if transform.direction == "forward": encoded_context_copy = transform(context_copy)
+
+            z = self.base_dist.interpolate(num_samples, z1=x, z2=None)
+        else:
+            z = self.base_dist.interpolate(num_samples, z1=None, z2=None)
+
+        # decode all num_samples
         context = context.repeat(num_samples, 1, 1, 1)
         if self.context_init: context = self.context_init(context)
         encoded_context = context
 
-        z = self.base_dist.interpolate(num_samples, z1=None, z2=None)
         for transform in reversed(self.transforms):            
             if isinstance(transform, ConditionalTransform):
                 z = transform.inverse(z, encoded_context)

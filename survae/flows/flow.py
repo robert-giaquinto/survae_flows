@@ -42,13 +42,29 @@ class Flow(Distribution):
         raise RuntimeError("Flow does not support sample_with_log_prob, see InverseFlow instead.")
 
     def interpolate(self, num_samples, x1=None, x2=None):
-        if x1 is not None and x2 is not None:
+        """
+        Interpolate num_samples across the latent space between given a context
+
+        If only an input x1 is given, then x1 will be encoded into the latent space and the interpolation path
+        will pass along a unit vector through x1 and -x1
+        """
+
+        z1, z2 = None, None
+
+        # encode x1 (and x2) if given
+        if x1 is not None:
             for transform in self.transforms:
                 x1, _ = transform(x1)
+
+            z1 = x1
+
+        if x2 is not None:
+            for transform in self.transforms:
                 x2, _ = transform(x2)
 
-            z1, z2 = x1, x2
-        
+            z2 = x2
+
+        # find interpolation path between z1 and z2, or (if z2=None) the path through norm(z1), or (if z1,z2 None) through random tails
         z = self.base_dist.interpolate(num_samples, z1, z2)
         for transform in reversed(self.transforms):
             z = transform.inverse(z)

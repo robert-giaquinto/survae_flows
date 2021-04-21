@@ -37,12 +37,17 @@ torch.manual_seed(eval_args.seed)
 with open(path_args, 'rb') as f:
     args = pickle.load(f)
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+args.device = torch.device(device)
+
+
 ##################
 ## Specify data ##
 ##################
 
 args.batch_size = 1
 _, eval_loader, data_shape, cond_shape = get_data(args)
+
 
 ###################
 ## Specify model ##
@@ -51,9 +56,13 @@ _, eval_loader, data_shape, cond_shape = get_data(args)
 model = get_model(args, data_shape=data_shape, cond_shape=cond_shape)
 if args.parallel == 'dp':
     model = DataParallelDistribution(model)
-checkpoint = torch.load(path_check)
+
+checkpoint = torch.load(path_check, map_location=device)
 model.load_state_dict(checkpoint['model'])
+model = model.to(device)
+model = model.eval()
 print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoch'], args.epochs))
+
 
 ############
 ## Sample ##
@@ -69,11 +78,6 @@ def save_images(imgs, file_path, num_bits=args.num_bits, nrow=1):
 
     nrow = imgs.size(0)
     vutils.save_image(out, file_path, nrow=nrow)
-    
-
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-model = model.to(device)
-model = model.eval()
 
 
 if not os.path.exists(os.path.join(f"{eval_args.model}", "interpolation/")):
@@ -102,12 +106,12 @@ else:
             if args.boosted_components > 1:
                 for c in range(model.num_components):
                     path_samples = os.path.join(f"{eval_args.model}", f"interpolation/batch{batch_id}/sample_e{checkpoint['current_epoch']}_c{c}_s{eval_args.seed}.png")
-                    samples = model.interpolate(num_samples=eval_args.num_samples, context=context.to(device), component=c)
+                    samples = model.interpolate(num_samples=eval_args.num_samples, context=context.to(device), component=c, x=imgs.to(device))
                     save_images(samples, path_samples)
         
             else:
                 path_samples = os.path.join(f"{eval_args.model}", f"interpolation/batch{batch_id}/sample_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
-                samples = model.interpolate(num_samples=eval_args.num_samples, context=context.to(device))
+                samples = model.interpolate(num_samples=eval_args.num_samples, context=context.to(device), x=imgs.to(device))
                 save_images(samples, path_samples)
 
             # save real samples too

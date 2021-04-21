@@ -6,6 +6,11 @@ import torch.nn.functional as F
 from survae.distributions import Distribution
 from survae.utils import sum_except_batch
 
+try:
+    from torch.linalg import norm
+except:
+    from torch import norm
+
 
 class StandardNormal(Distribution):
     """A multivariate Normal with zero mean and unit covariance."""
@@ -27,9 +32,18 @@ class StandardNormal(Distribution):
         return z
 
     def interpolate(self, num_samples, z1=None, z2=None):
-        if z1 is None or z2 is None:
-            z1 = torch.randn(1, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype) * 0.01
-            z2 = (torch.round(torch.rand(1, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype)) * 2.0) - 1.0
+        if z1 is None and z2 is None:
+            #z1 = torch.randn(1, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype) * 0.01
+            #z2 = (torch.round(torch.rand(1, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype)) * 2.0) - 1.0
+
+            # select z2 as point on tail with ~5% probability
+            z2 = torch.randn(1, *self.shape, device=self.buffer.device, dtype=self.buffer.dtype)
+            z2 = 1.4 * z2 / norm(z2)
+            z1 = z2 * -1  # opposite tail
+        elif z2 is None:
+            # find unit vector throuh z1, and scale it to a point with ~5% probability
+            z2 = 1.4 * z1 / norm(z1)
+            z1 = z2 * -1  # opposite tail
         else:
             assert z1.shape == z2.shape
 
@@ -60,9 +74,18 @@ class DiagonalNormal(Distribution):
 
     def interpolate(self, num_samples, z1=None, z2=None):
         if z1 is None or z2 is None:
-            z1 = torch.randn(1, *self.shape, device=self.loc.device, dtype=self.loc.dtype) * 0.01 + self.loc
-            eps = (torch.round(torch.rand(1, *self.shape, device=self.loc.device, dtype=self.loc.dtype)) * 2.0) - 1.0
+            #z1 = torch.randn(1, *self.shape, device=self.loc.device, dtype=self.loc.dtype) * 0.01 + self.loc
+            #eps = (torch.round(torch.rand(1, *self.shape, device=self.loc.device, dtype=self.loc.dtype)) * 2.0) - 1.0
+
+            # select z2 as point on tail with ~5% probability
+            eps = torch.randn(1, *self.shape, device=self.loc.device, dtype=self.loc.dtype)
+            z2 = 1.4 * eps / norm(eps)
             z2 = self.loc + self.log_scale.exp() * eps
+            z1 = z2 * -1  # opposite tail
+        elif z2 is None:
+            # rename points so that z1 still represents point near the origin
+            z2 = z1
+            z1 = z2 * -1.0  # opposite tail
         else:
             assert z1.shape == z2.shape
 
