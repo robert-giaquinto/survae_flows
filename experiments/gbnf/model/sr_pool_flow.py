@@ -3,13 +3,14 @@ import torch.nn as nn
 from survae.flows import ConditionalFlow
 from survae.distributions import ConvNormal2d, StandardNormal, StandardHalfNormal, ConditionalNormal, StandardUniform
 from survae.transforms import VAE, ConditionalVAE, Reshape
-from survae.transforms import UniformDequantization, VariationalDequantization
-from survae.transforms import ScalarAffineBijection, Squeeze2d, Conv1x1, Slice, SimpleMaxPoolSurjection2d, ActNormBijection2d, Augment
+from survae.transforms import UniformDequantization, VariationalDequantization, Augment
+from survae.transforms import ScalarAffineBijection, Squeeze2d, Conv1x1, Slice, SimpleMaxPoolSurjection2d, ActNormBijection2d
 from survae.transforms import ConditionalConv1x1, ConditionalActNormBijection2d
 from survae.nn.nets import ConvEncoderNet, ConvDecoderNet, DenseNet, ContextUpsampler, UpsamplerNet
 
 from model.coupling import SRCoupling, SRMixtureCoupling, Coupling, MixtureCoupling
 from model.dequantization_flow import DequantizationFlow
+from model.augment_flow import AugmentFlow
 
 
 class ContextInit(nn.Module):
@@ -50,11 +51,11 @@ class SRPoolFlow(ConditionalFlow):
                  dequant, dequant_steps, dequant_context,
                  coupling_blocks, coupling_channels, coupling_dropout,
                  coupling_gated_conv=None, coupling_depth=None, coupling_mixtures=None,
-                 augment_size=None, checkerboard_scales=[]):
+                 augment_size=None, checkerboard_scales=[], tuple_flip=True):
 
         if len(compression_ratio) == 1 and num_scales > 1:
-            compression_ratio = [compression_ratio[0]] * num_scales
-        assert all([compression_ratio[s] > 0 and compression_ratio[s] <= 1 for s in range(num_scales)])
+            compression_ratio = [compression_ratio[0]] * (num_scales - 1)
+        assert all([compression_ratio[s] > 0 and compression_ratio[s] <= 1 for s in range(num_scales-1)])
         
         # initialize context. Only upsample context in ContextInit if latent shape doesn't change during the flow.
         context_init = ContextInit(num_bits=num_bits,
@@ -77,11 +78,12 @@ class SRPoolFlow(ConditionalFlow):
                                                  num_context=dequant_context,
                                                  num_blocks=4,
                                                  mid_channels=coupling_channels,
-                                                 depth=2,
+                                                 depth=coupling_depth,
                                                  dropout=0.0,
                                                  gated_conv=False,
                                                  num_mixtures=coupling_mixtures,
-                                                 checkerboard=True)
+                                                 checkerboard=True,
+                                                 tuple_flip=tuple_flip)
             transforms.append(VariationalDequantization(encoder=dequantize_flow, num_bits=num_bits))
 
         # Change range from [0,1]^D to [-0.5, 0.5]^D
@@ -89,6 +91,7 @@ class SRPoolFlow(ConditionalFlow):
 
         # Initial squeeze
         if (current_shape[1] > 32 and current_shape[2] > 32) or 0 not in checkerboard_scales:
+            # only do the initial squeeze for large images or when we do a channel-wise coupling split
             transforms.append(Squeeze2d())
             current_shape = (current_shape[0] * 4,
                              current_shape[1] // 2,
@@ -96,7 +99,20 @@ class SRPoolFlow(ConditionalFlow):
 
         # add in augmentation channels if desired
         if augment_size is not None and augment_size > 0:
-            transforms.append(Augment(StandardUniform((augment_size, current_shape[1], current_shape[2])), x_size=augment_size))
+            #transforms.append(Augment(StandardUniform((augment_size, current_shape[1], current_shape[2])), x_size=current_shape[0]))
+            #transforms.append(Augment(StandardNormal((augment_size, current_shape[1], current_shape[2])), x_size=current_shape[0]))
+            augment_flow = AugmentFlow(data_shape=current_shape,
+                                       augment_size=augment_size,
+                                       num_steps=dequant_steps,
+                                       coupling_network=coupling_network,
+                                       mid_channels=coupling_channels,
+                                       num_context=dequant_context,
+                                       num_mixtures=coupling_mixtures,
+                                       num_blocks=4,
+                                       dropout=0.0,
+                                       checkerboard=True,
+                                       tuple_flip=tuple_flip)
+            transforms.append(Augment(encoder=augment_flow, x_size=current_shape[0]))
             current_shape = (current_shape[0] + augment_size,
                              current_shape[1],
                              current_shape[2])
@@ -113,6 +129,8 @@ class SRPoolFlow(ConditionalFlow):
             
             for step in range(num_steps):
 
+                flip = (step % 2 == 0) if tuple_flip else False
+                
                 if len(conditional_channels) == 0:
                     if actnorm: transforms.append(ActNormBijection2d(current_shape[0]))
                     transforms.append(Conv1x1(current_shape[0]))
@@ -129,7 +147,8 @@ class SRPoolFlow(ConditionalFlow):
                                                  dropout=coupling_dropout,
                                                  gated_conv=coupling_gated_conv,
                                                  coupling_network=coupling_network,
-                                                 checkerboard=checkerboard))
+                                                 checkerboard=checkerboard,
+                                                 flip=flip))
                     
                 elif coupling_network == "transformer":
                     transforms.append(SRMixtureCoupling(x_size=current_shape,
@@ -138,7 +157,8 @@ class SRPoolFlow(ConditionalFlow):
                                                         dropout=coupling_dropout,
                                                         num_blocks=coupling_blocks,
                                                         num_mixtures=coupling_mixtures,
-                                                        checkerboard=checkerboard))
+                                                        checkerboard=checkerboard,
+                                                        flip=flip))
 
             # Upsample context (for the previous flows, only if moving in the inverse direction)
             transforms.append(ContextUpsampler(context_net=context_upsampler_net, direction='inverse'))

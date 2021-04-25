@@ -48,7 +48,7 @@ class ConditionalFlow(ConditionalDistribution):
             
         return log_prob
 
-    def sample(self, context, temperature):
+    def sample(self, context, temperature=None):
         if self.context_init: context = self.context_init(context)
         encoded_context = context
 
@@ -57,7 +57,7 @@ class ConditionalFlow(ConditionalDistribution):
         else:
             z = self.base_dist.sample(context_size(encoded_context), temperature=temperature)
 
-        for transform in reversed(self.transforms):            
+        for transform in reversed(self.transforms):  
             if isinstance(transform, ConditionalTransform):
                 z = transform.inverse(z, encoded_context)
             elif isinstance(transform, Transform):

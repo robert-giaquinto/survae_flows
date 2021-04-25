@@ -49,11 +49,11 @@ class ConditionalCouplingBijection(ConditionalBijection):
         if self.context_net: context = self.context_net(context)
         id, x2 = self.split_input(x)
 
-        if context.shape[2] == 1 and context.shape[3] == 1:
+        if len(context.shape) > 2 and  context.shape[2] == 1 and context.shape[3] == 1:
             context = id + context
         else:
             context = torch.cat([id, context], dim=1)
-
+            
         elementwise_params = self.coupling_net(context)
         z2, ldj = self._elementwise_forward(x2, elementwise_params)
         z = self.combine_output(id, z2)
@@ -64,7 +64,7 @@ class ConditionalCouplingBijection(ConditionalBijection):
             if self.context_net: context = self.context_net(context)
             id, z2 = self.split_input(z)
 
-            if context.shape[2] == 1 and context.shape[3] == 1:
+            if len(context.shape) > 2 and context.shape[2] == 1 and context.shape[3] == 1:
                 context = id + context
             else:
                 context = torch.cat([id, context], dim=1)

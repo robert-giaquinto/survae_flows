@@ -69,9 +69,10 @@ def get_data(args):
         random.seed(seed)
         torch.manual_seed(seed)
         return
-                       
-    train_loader = dataset.get_data_loader(split="train", batch_size=args.batch_size, shuffle=True, pin_memory=args.pin_memory, num_workers=args.num_workers)
-    test_loader = dataset.get_data_loader(split="test", batch_size=args.batch_size, shuffle=False, pin_memory=args.pin_memory, num_workers=args.num_workers, worker_init_fn=_init_fn)
+
+    pin = args.pin_memory and args.device == "cuda"
+    train_loader = dataset.get_data_loader(split="train", batch_size=args.batch_size, shuffle=True, pin_memory=pin, num_workers=args.num_workers)
+    test_loader = dataset.get_data_loader(split="test", batch_size=args.batch_size, shuffle=False, pin_memory=pin, num_workers=args.num_workers, worker_init_fn=_init_fn)
 
     return train_loader, test_loader, data_shape, cond_shape
 

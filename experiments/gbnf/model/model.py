@@ -76,6 +76,8 @@ def get_model_id(args):
         model_id = 'Slice_Flow'
     elif args.flow == "none":
         model_id = 'Bijective_Flow'
+    elif args.flow == "srcompressive":
+        model_id = "SRCompressive"
     else:
         raise ValueError(f"No model defined for args.flow={args.flow}")
 

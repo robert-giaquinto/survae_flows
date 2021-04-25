@@ -14,7 +14,7 @@ from .coupling import ConditionalCoupling, ConditionalMixtureCoupling
 class DequantizationFlow(ConditionalInverseFlow):
 
     def __init__(self, data_shape, num_bits, num_steps, coupling_network, num_context,
-                 mid_channels, num_blocks=4, depth=4, growth=32, dropout=0.0, gated_conv=False, num_mixtures=4, checkerboard=True):
+                 mid_channels, num_blocks=4, depth=4, growth=32, dropout=0.0, gated_conv=False, num_mixtures=4, checkerboard=True, tuple_flip=True):
 
         context_in = data_shape[0] * 2 if checkerboard else data_shape[0]
         context_network_type = "conv"
@@ -63,6 +63,7 @@ class DequantizationFlow(ConditionalInverseFlow):
         transforms = []
         sample_shape = (data_shape[0] * 4, data_shape[1] // 2, data_shape[2] // 2)
         for i in range(num_steps):
+            flip = (i % 2 == 0) if tuple_flip else False
             transforms.append(ActNormBijection2d(sample_shape[0]))
             transforms.extend([Conv1x1(sample_shape[0])])
             if coupling_network in ["conv", "densenet"]:
@@ -76,7 +77,7 @@ class DequantizationFlow(ConditionalInverseFlow):
                                         gated_conv=gated_conv,
                                         coupling_network=coupling_network,
                                         checkerboard=checkerboard,
-                                        flip=(i % 2 == 0)))
+                                        flip=flip))
                 
             elif coupling_network == "transformer":
                 transforms.append(
@@ -88,7 +89,7 @@ class DequantizationFlow(ConditionalInverseFlow):
                                                dropout=dropout,
                                                use_attn=False,
                                                checkerboard=checkerboard,
-                                               flip=(i % 2 == 0)))
+                                               flip=flip))
             else:
                 raise ValueError(f"Unknown network type {coupling_network}")
 

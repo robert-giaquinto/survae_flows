@@ -118,17 +118,21 @@ class BoostedFlowExperiment(FlowExperiment):
                 context = context.to(self.args.device)
                 x = x.to(self.args.device)
                 
-                loss = -1.0 * self.model.log_prob(x, context).sum() / (math.log(2) * x.shape.numel())
-                loss_sum += loss.detach().cpu().item() * batch_size
+                #loss = -1.0 * self.model.log_prob(x, context).sum() / (math.log(2) * x.shape.numel())
+                #loss_sum += loss.detach().cpu().item() * batch_size
 
                 approx_loss = -1.0 * self.model.approximate_mixture_log_prob(x, context).sum() / (math.log(2) * x.shape.numel())
                 approx_loss_sum += approx_loss.detach().cpu().item() * batch_size
 
                 loss_count += batch_size
-                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}, aprx={:.3f}'.format(
-                    self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count, approx_loss_sum/loss_count), end='\r')
+                #print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}, aprx={:.3f}'.format(
+                #    self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count, approx_loss_sum/loss_count), end='\r')
+                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(
+                    self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), approx_loss_sum/loss_count), end='\r')
+
             print('')
-        return {'bpd': loss_sum/loss_count, 'bpd_aprx': approx_loss_sum/loss_count}
+        #return {'bpd': loss_sum/loss_count, 'bpd_aprx': approx_loss_sum/loss_count}
+        return {'bpd': approx_loss_sum/loss_count}
 
     def _eval_fn(self, epoch):
         self.model.eval()
@@ -141,17 +145,21 @@ class BoostedFlowExperiment(FlowExperiment):
                 batch_size = len(x)
                 x = x.to(self.args.device)
 
-                loss = -1.0 * self.model.log_prob(x).sum() / (math.log(2) * x.shape.numel())
-                loss_sum += loss.detach().cpu().item() * batch_size
+                #loss = -1.0 * self.model.log_prob(x).sum() / (math.log(2) * x.shape.numel())
+                #loss_sum += loss.detach().cpu().item() * batch_size
 
                 approx_loss = -1.0 * self.model.approximate_mixture_log_prob(x).sum() / (math.log(2) * x.shape.numel())
                 approx_loss_sum += approx_loss.detach().cpu().item() * batch_size
 
                 loss_count += batch_size
-                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}, aprx={:.3f}'.format(
-                    self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count, approx_loss_sum/loss_count), end='\r')                
+                #print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}, aprx={:.3f}'.format(
+                #    self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count, approx_loss_sum/loss_count), end='\r')
+                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(
+                    self.current_epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), approx_loss_sum/loss_count), end='\r')                
+
             print('')
-        return {'bpd': loss_sum/loss_count, 'bpd_aprx': approx_loss_sum/loss_count}
+        #return {'bpd': loss_sum/loss_count, 'bpd_aprx': approx_loss_sum/loss_count}
+        return {'bpd': approx_loss_sum/loss_count}
 
     def sample_fn(self, components="1:c", temperature=None, sample_new_batch=False):
         if self.args.samples < 1:

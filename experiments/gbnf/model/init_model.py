@@ -6,6 +6,7 @@ from model.multilevel_compressive_flow import MultilevelCompressiveFlow
 from model.pool_flow import PoolFlow
 from model.cond_pool_flow import CondPoolFlow
 from model.sr_pool_flow import SRPoolFlow
+from model.sr_compressive_flow import SRCompressiveFlow
 
 
 def init_model(args, data_shape, cond_shape=None):

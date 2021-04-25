@@ -10,6 +10,7 @@ venv/
 experiments/manifold/log/*
 experiments/image/log/*
 experiments/gbnf/log/*
+experiments/student_teacher/log/*
 examples/results/*.png
 debug*.sh
 *_debug.sh
