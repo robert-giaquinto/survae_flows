@@ -11,7 +11,7 @@ from torchvision.transforms.functional import crop, resize
 from survae.data import DATA_PATH
 
 
-class UnsupervisedCelebADataset(data.Dataset):
+class UnsupervisedCelebA32Dataset(data.Dataset):
     """
     The CelebA dataset of
     (Liu et al., 2015): https://arxiv.org/abs/1411.7766
@@ -30,13 +30,14 @@ class UnsupervisedCelebADataset(data.Dataset):
 
     Subsequently, move the files img_align_celeba.zip and list_eval_partition.txt
     into folder [root]/celeba/raw/
-
     """
 
     raw_folder = 'celeba/raw'
-    processed_folder = 'celeba/processed'
+    processed_folder = 'celeba/processed32'
 
     def __init__(self, root=DATA_PATH, split='train', transform=None):
+        super(UnsupervisedCelebA32Dataset, self).__init__()
+        
         assert split in {'train','valid','test'}
         self.root = os.path.expanduser(root)
         self.split = split
@@ -128,7 +129,7 @@ class UnsupervisedCelebADataset(data.Dataset):
             ## Resize image
             # Resizing taken from Line 995-996 in
             # https://github.com/laurent-dinh/models/blob/master/real_nvp/real_nvp_multiscale_dataset.py
-            resized_img = resize(img, size=(128,128), interpolation=Image.BILINEAR)
+            resized_img = resize(img, size=(32,32), interpolation=Image.BILINEAR)
 
             images.append(resized_img)
 
@@ -165,3 +166,76 @@ class UnsupervisedCelebADataset(data.Dataset):
         self.process_file_list(zipfile_object=zip, file_list=test_files, processed_filename=self.processed_test_file)
 
         zip.close()
+
+
+
+class UnsupervisedCelebA64Dataset(UnsupervisedCelebA32Dataset):
+
+    raw_folder = 'celeba/raw'
+    processed_folder = 'celeba/processed64'
+
+    def __init__(self, root=DATA_PATH, split='train', transform=None):
+        super(UnsupervisedCelebA64Dataset, self).__init__(root, split=split, transform=transform)
+
+    def process_file_list(self, zipfile_object, file_list, processed_filename):
+        images = []
+        for i, jpg_file in enumerate(file_list):
+
+            if (i+1)%1000 == 0:
+                print('File', i+1, '/', len(file_list), end='\r')
+
+            ## Read file
+            img_bytes = zipfile_object.read('img_align_celeba/' + jpg_file)
+            img = Image.open(io.BytesIO(img_bytes))
+
+            ## Crop image
+            # Coordinates taken from Line 981 in
+            # https://github.com/laurent-dinh/models/blob/master/real_nvp/real_nvp_multiscale_dataset.py
+            # Coordinates of upper left corner: (40, 15)
+            # Size of cropped image: (148, 148)
+            cropped_img = crop(img, 40, 15, 148, 148)
+
+            ## Resize image
+            # Resizing taken from Line 995-996 in
+            # https://github.com/laurent-dinh/models/blob/master/real_nvp/real_nvp_multiscale_dataset.py
+            resized_img = resize(img, size=(64,64), interpolation=Image.BILINEAR)
+
+            images.append(resized_img)
+
+        torch.save(images, processed_filename)
+
+
+class UnsupervisedCelebA128Dataset(UnsupervisedCelebA32Dataset):
+
+    raw_folder = 'celeba/raw'
+    processed_folder = 'celeba/processed128'
+
+    def __init__(self, root=DATA_PATH, split='train', transform=None):
+        super(UnsupervisedCelebA128Dataset, self).__init__(root, split=split, transform=transform)
+
+    def process_file_list(self, zipfile_object, file_list, processed_filename):
+        images = []
+        for i, jpg_file in enumerate(file_list):
+
+            if (i+1)%1000 == 0:
+                print('File', i+1, '/', len(file_list), end='\r')
+
+            ## Read file
+            img_bytes = zipfile_object.read('img_align_celeba/' + jpg_file)
+            img = Image.open(io.BytesIO(img_bytes))
+
+            ## Crop image
+            # Coordinates taken from Line 981 in
+            # https://github.com/laurent-dinh/models/blob/master/real_nvp/real_nvp_multiscale_dataset.py
+            # Coordinates of upper left corner: (40, 15)
+            # Size of cropped image: (148, 148)
+            cropped_img = crop(img, 40, 15, 148, 148)
+
+            ## Resize image
+            # Resizing taken from Line 995-996 in
+            # https://github.com/laurent-dinh/models/blob/master/real_nvp/real_nvp_multiscale_dataset.py
+            resized_img = resize(img, size=(128,128), interpolation=Image.BILINEAR)
+
+            images.append(resized_img)
+
+        torch.save(images, processed_filename)

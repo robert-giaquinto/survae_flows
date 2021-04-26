@@ -8,57 +8,26 @@ import zipfile
 import io
 from PIL import Image
 from torchvision.transforms.functional import crop, resize
+
 from survae.data import DATA_PATH
+from survae.data.datasets.image.unsupervised_wrappers.celeba import UnsupervisedCelebA32Dataset, UnsupervisedCelebA64Dataset, UnsupervisedCelebA128Dataset
 
 
-class SuperResolutionCelebADataset(data.Dataset):
+class SuperResolutionCelebA32Dataset(UnsupervisedCelebA32Dataset):
     """
     The CelebA dataset of
     (Liu et al., 2015): https://arxiv.org/abs/1411.7766
-    preprocessed to 64x64 as in
     (Larsen et al. 2016): https://arxiv.org/abs/1512.09300
     (Dinh et al., 2017): https://arxiv.org/abs/1605.08803
-
-    From https://github.com/laurent-dinh/models/blob/master/real_nvp/celeba_formatting.py:
-    "
-    Download img_align_celeba.zip from
-    http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html under the
-    link "Align&Cropped Images" in the "Img" directory and list_eval_partition.txt
-    under the link "Train/Val/Test Partitions" in the "Eval" directory. Then do:
-    unzip img_align_celeba.zip
-    "
-
-    Subsequently, move the files img_align_celeba.zip and list_eval_partition.txt
-    into folder [root]/celeba/raw/
-
     """
-
     raw_folder = 'celeba/raw'
-    processed_folder = 'celeba/processed'
+    processed_folder = 'celeba/processed32'
 
     def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4):
-        super(SuperResolutionCelebADataset, self).__init__()
-
-        assert split in {'train','valid','test'}
-        self.root = os.path.expanduser(root)
-        self.split = split
-        self.transform = transform
+        super(SuperResolutionCelebA32Dataset, self).__init__(root=root, split=split, transform=transform)
 
         assert isinstance(sr_scale_factor, int) and sr_scale_factor > 1
         self.sr_scale_factor = sr_scale_factor
-
-        if not self._check_raw():
-            raise RuntimeError('Dataset not found.\n\nFrom docstring:\n\n' + self.__doc__)
-
-        if not self._check_processed():
-            self.process()
-
-        if self.split=='train':
-            self.data = torch.load(self.processed_train_file)
-        elif self.split=='valid':
-            self.data = torch.load(self.processed_valid_file)
-        elif self.split=='test':
-            self.data = torch.load(self.processed_test_file)
 
     def __getitem__(self, index):
         """
@@ -76,98 +45,68 @@ class SuperResolutionCelebADataset(data.Dataset):
         lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
         return (hr, lr)
 
-    def __len__(self):
-        return len(self.data)
+    
+class SuperResolutionCelebA64Dataset(UnsupervisedCelebA64Dataset):
+    """
+    The CelebA dataset of
+    (Liu et al., 2015): https://arxiv.org/abs/1411.7766
+    (Larsen et al. 2016): https://arxiv.org/abs/1512.09300
+    (Dinh et al., 2017): https://arxiv.org/abs/1605.08803
+    """
+    raw_folder = 'celeba/raw'
+    processed_folder = 'celeba/processed64'
 
-    @property
-    def raw_data_folder(self):
-        return os.path.join(self.root, self.raw_folder)
+    def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4):
+        super(UnsupervisedCelebA64Dataset, self).__init__(root=root, split=split, transform=transform)
 
-    @property
-    def raw_zip_file(self):
-        return os.path.join(self.raw_data_folder, 'img_align_celeba.zip')
+        assert isinstance(sr_scale_factor, int) and sr_scale_factor > 1
+        self.sr_scale_factor = sr_scale_factor
 
-    @property
-    def raw_txt_file(self):
-        return os.path.join(self.raw_data_folder, 'list_eval_partition.txt')
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+        Returns:
+            tensor: image
+        """
 
-    def _check_raw(self):
-        return os.path.exists(self.raw_zip_file) and os.path.exists(self.raw_txt_file)
+        hr = self.data[index]
 
-    @property
-    def processed_data_folder(self):
-        return os.path.join(self.root, self.processed_folder)
+        if self.transform is not None:
+            hr = self.transform(hr)
 
-    @property
-    def processed_train_file(self):
-        return os.path.join(self.processed_data_folder, 'train.pt')
+        lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+        return (hr, lr)
 
-    @property
-    def processed_valid_file(self):
-        return os.path.join(self.processed_data_folder, 'valid.pt')
 
-    @property
-    def processed_test_file(self):
-        return os.path.join(self.processed_data_folder, 'test.pt')
+class SuperResolutionCelebA128Dataset(UnsupervisedCelebA128Dataset):
+    """
+    The CelebA dataset of
+    (Liu et al., 2015): https://arxiv.org/abs/1411.7766
+    (Larsen et al. 2016): https://arxiv.org/abs/1512.09300
+    (Dinh et al., 2017): https://arxiv.org/abs/1605.08803
+    """
+    raw_folder = 'celeba/raw'
+    processed_folder = 'celeba/processed128'
 
-    def _check_processed(self):
-        return os.path.exists(self.processed_train_file) and os.path.exists(self.processed_valid_file) and os.path.exists(self.processed_test_file)
+    def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4):
+        super(UnsupervisedCelebA128Dataset, self).__init__(root=root, split=split, transform=transform)
 
-    def process_file_list(self, zipfile_object, file_list, processed_filename):
-        images = []
-        for i, jpg_file in enumerate(file_list):
+        assert isinstance(sr_scale_factor, int) and sr_scale_factor > 1
+        self.sr_scale_factor = sr_scale_factor
 
-            if (i+1)%1000 == 0:
-                print('File', i+1, '/', len(file_list), end='\r')
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+        Returns:
+            tensor: image
+        """
 
-            ## Read file
-            img_bytes = zipfile_object.read('img_align_celeba/' + jpg_file)
-            img = Image.open(io.BytesIO(img_bytes))
+        hr = self.data[index]
 
-            ## Crop image
-            # Coordinates taken from Line 981 in
-            # https://github.com/laurent-dinh/models/blob/master/real_nvp/real_nvp_multiscale_dataset.py
-            # Coordinates of upper left corner: (40, 15)
-            # Size of cropped image: (148, 148)
-            cropped_img = crop(img, 40, 15, 148, 148)
+        if self.transform is not None:
+            hr = self.transform(hr)
 
-            ## Resize image
-            # Resizing taken from Line 995-996 in
-            # https://github.com/laurent-dinh/models/blob/master/real_nvp/real_nvp_multiscale_dataset.py
-            resized_img = resize(img, size=(128,128), interpolation=Image.BILINEAR)
-
-            images.append(resized_img)
-
-        torch.save(images, processed_filename)
-
-    def process(self):
-
-        print("Reading filenames...")
-        train_files = []
-        valid_files = []
-        test_files = []
-        for line in open(self.raw_txt_file, 'r'):
-            a, b = line.split()
-            if b=='0':
-                train_files.append(a)
-            elif b=='1':
-                valid_files.append(a)
-            elif b=='2':
-                test_files.append(a)
-
-        print("Reading zip file...")
-        zip = zipfile.ZipFile(self.raw_zip_file, 'r')
-
-        if not os.path.exists(self.processed_data_folder):
-            os.mkdir(self.processed_data_folder)
-
-        print("Preparing training data...")
-        self.process_file_list(zipfile_object=zip, file_list=train_files, processed_filename=self.processed_train_file)
-
-        print("Preparing validation data...")
-        self.process_file_list(zipfile_object=zip, file_list=valid_files, processed_filename=self.processed_valid_file)
-
-        print("Preparing test data...")
-        self.process_file_list(zipfile_object=zip, file_list=test_files, processed_filename=self.processed_test_file)
-
-        zip.close()
+        lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+        return (hr, lr)

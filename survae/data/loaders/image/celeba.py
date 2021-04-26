@@ -1,10 +1,12 @@
-from survae.data.datasets.image import SuperResolutionCelebADataset, UnsupervisedCelebADataset, SupervisedCelebADataset
+from survae.data.datasets.image import SuperResolutionCelebA32Dataset, UnsupervisedCelebA32Dataset
+from survae.data.datasets.image import SuperResolutionCelebA64Dataset, UnsupervisedCelebA64Dataset
+from survae.data.datasets.image import SuperResolutionCelebA128Dataset, UnsupervisedCelebA128Dataset
 from torchvision.transforms import Compose, ToTensor, Resize
 from survae.data.transforms import Quantize
 from survae.data import TrainValidTestLoader, DATA_PATH
 
 
-class CelebA32(TrainValidTestLoader):
+class CelebA(TrainValidTestLoader):
     '''
     The CelebA dataset of
     (Liu et al., 2015): https://arxiv.org/abs/1411.7766
@@ -12,96 +14,68 @@ class CelebA32(TrainValidTestLoader):
     (Larsen et al. 2016): https://arxiv.org/abs/1512.09300
     (Dinh et al., 2017): https://arxiv.org/abs/1605.08803
     '''
+    def __init__(self, input_size, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
+        super(CelebA, self).__init__()
 
-    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
-
+        assert len(input_size) == 3
+        
         self.root = root
-        self.input_size = [3, 32, 32]
+        self.input_size = input_size
         self.y_classes = 40
 
-        trans_train = pil_transforms + [Resize(self.input_size[1:]), ToTensor(), Quantize(num_bits)]
-        trans_test = [Resize(self.input_size[1:]), ToTensor(), Quantize(num_bits)]        
+        trans_train = pil_transforms + [ToTensor(), Quantize(num_bits)]
+        trans_test = [ToTensor(), Quantize(num_bits)]
+
+        if conditional:
+            raise ValueError(f"Conditional CelebA dataset not available yet.")
 
         # Load data
         if super_resolution:
-            self.train = SuperResolutionCelebADataset(root, split='train', transform=Compose(trans_train), sr_scale_factor=sr_scale_factor)
-            self.valid = SuperResolutionCelebADataset(root, split='valid', transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
-            self.test = SuperResolutionCelebADataset(root, split='test', transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
-        elif conditional:
-            one_hot_encode = lambda target: F.one_hot(torch.tensor(target), self.y_classes)  # needed?
-            self.train = SupervisedCelebADataset(root, split='train', transform=Compose(trans_train), target_transform=one_hot_encode)
-            self.valid = SupervisedCelebADataset(root, split='valid', transform=Compose(trans_test), target_transform=one_hot_encode)
-            self.test = SupervisedCelebADataset(root, split='test', transform=Compose(trans_test), target_transform=one_hot_encode)
+            if input_size[-1] == 32:
+                Dataset = SuperResolutionCelebA32Dataset
+            elif input_size[-1] == 64:
+                Dataset = SuperResolutionCelebA64Dataset
+            elif input_size[-1] == 128:
+                Dataset = SuperResolutionCelebA128Dataset
+            else:
+                raise ValueError(f"Invalid input size {input_size}")
+
+            self.train = Dataset(root, split='train', transform=Compose(trans_train), sr_scale_factor=sr_scale_factor)
+            self.valid = Dataset(root, split='valid', transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
+            self.test = Dataset(root, split='test', transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
+            
         else:
-            self.train = UnsupervisedCelebADataset(root, split='train', transform=Compose(trans_train))
-            self.valid = UnsupervisedCelebADataset(root, split='valid', transform=Compose(trans_test))
-            self.test = UnsupervisedCelebADataset(root, split='test', transform=Compose(trans_test))
+            if input_size[-1] == 32:
+                Dataset = UnsupervisedCelebA32Dataset
+            elif input_size[-1] == 64:
+                Dataset = UnsupervisedCelebA64Dataset
+            elif input_size[-1] == 128:
+                Dataset = UnsupervisedCelebA128Dataset
+            else:
+                raise ValueError(f"Invalid input size {input_size}")
 
 
-class CelebA64(TrainValidTestLoader):
-    '''
-    The CelebA dataset of
-    (Liu et al., 2015): https://arxiv.org/abs/1411.7766
-    preprocessed to 64x64 as in
-    (Larsen et al. 2016): https://arxiv.org/abs/1512.09300
-    (Dinh et al., 2017): https://arxiv.org/abs/1605.08803
-    '''
+            self.train = Dataset(root, split='train', transform=Compose(trans_train))
+            self.valid = Dataset(root, split='valid', transform=Compose(trans_test))
+            self.test = Dataset(root, split='test', transform=Compose(trans_test))
 
+
+class CelebA32(CelebA):
     def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
+        super(CelebA32, self).__init__(input_size=[3,32,32], root=root,
+                                       num_bits=num_bits, pil_transforms=pil_transforms,
+                                       conditional=conditional, super_resolution=super_resolution, sr_scale_factor=sr_scale_factor)
 
-        self.root = root
-        self.input_size = [3, 64, 64]
-        self.y_classes = 40
-
-        trans_train = pil_transforms + [Resize(self.input_size[1:]), ToTensor(), Quantize(num_bits)]
-        trans_test = [Resize(self.input_size[1:]), ToTensor(), Quantize(num_bits)]
-
-        # Load data
-        if super_resolution:
-            self.train = SuperResolutionCelebADataset(root, split='train', transform=Compose(trans_train), sr_scale_factor=sr_scale_factor)
-            self.valid = SuperResolutionCelebADataset(root, split='valid', transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
-            self.test = SuperResolutionCelebADataset(root, split='test', transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
-        elif conditional:
-            one_hot_encode = lambda target: F.one_hot(torch.tensor(target), self.y_classes)  # needed?
-            self.train = SupervisedCelebADataset(root, split='train', transform=Compose(trans_train), target_transform=one_hot_encode)
-            self.valid = SupervisedCelebADataset(root, split='valid', transform=Compose(trans_test), target_transform=one_hot_encode)
-            self.test = SupervisedCelebADataset(root, split='test', transform=Compose(trans_test), target_transform=one_hot_encode)
-        else:
-            self.train = UnsupervisedCelebADataset(root, split='train', transform=Compose(trans_train))
-            self.valid = UnsupervisedCelebADataset(root, split='valid', transform=Compose(trans_test))
-            self.test = UnsupervisedCelebADataset(root, split='test', transform=Compose(trans_test))
-
-
-class CelebA128(TrainValidTestLoader):
-    '''
-    The CelebA dataset of
-    (Liu et al., 2015): https://arxiv.org/abs/1411.7766
-    preprocessed to 64x64 as in
-    (Larsen et al. 2016): https://arxiv.org/abs/1512.09300
-    (Dinh et al., 2017): https://arxiv.org/abs/1605.08803
-    '''
-
+class CelebA64(CelebA):
     def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
+        super(CelebA64, self).__init__(input_size=[3,64,64], root=root,
+                                       num_bits=num_bits, pil_transforms=pil_transforms,
+                                       conditional=conditional, super_resolution=super_resolution, sr_scale_factor=sr_scale_factor)
 
-        self.root = root
-        self.input_size = [3, 128, 128]
-        self.y_classes = 40
+class CelebA128(CelebA):
+    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
+        super(CelebA128, self).__init__(input_size=[3,128,128], root=root,
+                                       num_bits=num_bits, pil_transforms=pil_transforms,
+                                       conditional=conditional, super_resolution=super_resolution, sr_scale_factor=sr_scale_factor)
 
-        trans_train = pil_transforms + [Resize(self.input_size[1:]), ToTensor(), Quantize(num_bits)]
-        trans_test = [Resize(self.input_size[1:]), ToTensor(), Quantize(num_bits)]
-
-        # Load data
-        if super_resolution:
-            self.train = SuperResolutionCelebADataset(root, split='train', transform=Compose(trans_train), sr_scale_factor=sr_scale_factor)
-            self.valid = SuperResolutionCelebADataset(root, split='valid', transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
-            self.test = SuperResolutionCelebADataset(root, split='test', transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
-        elif conditional:
-            one_hot_encode = lambda target: F.one_hot(torch.tensor(target), self.y_classes)  # needed?
-            self.train = SupervisedCelebADataset(root, split='train', transform=Compose(trans_train), target_transform=one_hot_encode)
-            self.valid = SupervisedCelebADataset(root, split='valid', transform=Compose(trans_test), target_transform=one_hot_encode)
-            self.test = SupervisedCelebADataset(root, split='test', transform=Compose(trans_test), target_transform=one_hot_encode)
-        else:
-            self.train = UnsupervisedCelebADataset(root, split='train', transform=Compose(trans_train))
-            self.valid = UnsupervisedCelebADataset(root, split='valid', transform=Compose(trans_test))
-            self.test = UnsupervisedCelebADataset(root, split='test', transform=Compose(trans_test))
 
