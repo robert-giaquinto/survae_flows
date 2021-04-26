@@ -134,7 +134,7 @@ class SuperResolutionCelebADataset(data.Dataset):
             ## Resize image
             # Resizing taken from Line 995-996 in
             # https://github.com/laurent-dinh/models/blob/master/real_nvp/real_nvp_multiscale_dataset.py
-            resized_img = resize(img, size=(64,64), interpolation=Image.BILINEAR)
+            resized_img = resize(img, size=(128,128), interpolation=Image.BILINEAR)
 
             images.append(resized_img)
 

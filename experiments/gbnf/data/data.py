@@ -6,9 +6,9 @@ from torch.utils.data import DataLoader
 
 from torchvision.transforms import RandomHorizontalFlip, Pad, RandomAffine, CenterCrop
 from survae.data.loaders.image import DynamicallyBinarizedMNIST, FixedBinarizedMNIST, MNIST
-from survae.data.loaders.image import CIFAR10, ImageNet32, ImageNet64, SVHN, CelebA32, CelebA64
+from survae.data.loaders.image import CIFAR10, ImageNet32, ImageNet64, SVHN, CelebA32, CelebA64, CelebA128
 
-dataset_choices = {'cifar10', 'imagenet32', 'imagenet64', 'svhn', 'mnist', 'binary_mnist', 'celeba32', 'celeba64'}
+dataset_choices = {'cifar10', 'imagenet32', 'imagenet64', 'svhn', 'mnist', 'binary_mnist', 'celeba32', 'celeba64', 'celeba128'}
 
 
 def add_data_args(parser):
@@ -59,6 +59,8 @@ def get_data(args):
         dataset = CelebA32(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
     elif args.dataset == 'celeba64':
         dataset = CelebA64(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
+    elif args.dataset == 'celeba128':
+        dataset = CelebA128(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
     else:
         raise ValueError(f"{dataset} is an unrecognized dataset.")
 
@@ -112,6 +114,9 @@ def get_data_shape(dataset):
         data_shape = (3,32,32)
     elif dataset == 'celeba64':
         data_shape = (3,64,64)
+    elif dataset == 'celeba128':
+        data_shape = (3,128,128)
+
     else:
         raise ValueError(f"{dataset} is an unrecognized dataset.")
         
@@ -141,8 +146,11 @@ def get_label_shape(dataset):
         cond_shape = None
     elif dataset == 'celeba32':
         cond_shape = None
-    elif dataset == 'celeba32':
+    elif dataset == 'celeba64':
         cond_shape = None
+    elif dataset == 'celeba128':
+        cond_shape = None
+
     else:
         raise ValueError(f"{dataset} is an unrecognized dataset.")
 
