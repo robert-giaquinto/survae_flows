@@ -52,6 +52,12 @@ def add_model_args(parser):
     parser.add_argument('--dequant', type=str, default='uniform', choices=['uniform', 'flow', 'none'])
     parser.add_argument('--dequant_steps', type=int, default=4)
     parser.add_argument('--dequant_context', type=int, default=32)
+    parser.add_argument('--dequant_blocks', type=int, default=2)
+
+    # augmentation parameters
+    parser.add_argument('--augment_steps', type=int, default=4)
+    parser.add_argument('--augment_context', type=int, default=32)
+    parser.add_argument('--augment_blocks', type=int, default=2)
 
     # coupling network parameters
     parser.add_argument('--coupling_network', type=str, default="transformer", choices=["conv", "transformer", "densenet"])

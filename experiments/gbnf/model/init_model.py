@@ -27,9 +27,6 @@ def init_model(args, data_shape, cond_shape=None):
                            lowres_upsampler_channels=args.lowres_upsampler_channels,
                            pooling=args.flow,
                            compression_ratio=args.compression_ratio,
-                           dequant=args.dequant,
-                           dequant_steps=args.dequant_steps,
-                           dequant_context=args.dequant_context,
                            coupling_network=args.coupling_network,
                            coupling_blocks=args.coupling_blocks,
                            coupling_channels=args.coupling_channels,
@@ -37,7 +34,14 @@ def init_model(args, data_shape, cond_shape=None):
                            coupling_dropout=args.coupling_dropout,
                            coupling_gated_conv=args.coupling_gated_conv,
                            coupling_mixtures=args.coupling_mixtures,
+                           dequant=args.dequant,
+                           dequant_steps=args.dequant_steps,
+                           dequant_context=args.dequant_context,
+                           dequant_blocks=args.dequant_blocks,
                            augment_size=args.augment_size,
+                           augment_steps=args.augment_steps,
+                           augment_context=args.augment_context,
+                           augment_blocks=args.augment_blocks,
                            checkerboard_scales=args.checkerboard_scales)
         
     elif args.flow == "vae":

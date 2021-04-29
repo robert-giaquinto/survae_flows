@@ -48,14 +48,15 @@ class SRPoolFlow(ConditionalFlow):
                  lowres_encoder_channels, lowres_encoder_blocks, lowres_encoder_depth, lowres_upsampler_channels,
                  pooling, compression_ratio,
                  coupling_network,
-                 dequant, dequant_steps, dequant_context,
-                 coupling_blocks, coupling_channels, coupling_dropout,
-                 coupling_gated_conv=None, coupling_depth=None, coupling_mixtures=None,
+                 coupling_blocks, coupling_channels,
+                 coupling_dropout=0.0, coupling_gated_conv=None, coupling_depth=None, coupling_mixtures=None,
+                 dequant="flow", dequant_steps=4, dequant_context=32, dequant_blocks=2,
+                 augment_steps=4, augment_context=32, augment_blocks=2,
                  augment_size=None, checkerboard_scales=[], tuple_flip=True):
 
         if len(compression_ratio) == 1 and num_scales > 1:
             compression_ratio = [compression_ratio[0]] * (num_scales - 1)
-        assert all([compression_ratio[s] > 0 and compression_ratio[s] <= 1 for s in range(num_scales-1)])
+        assert all([compression_ratio[s] >= 0.0 and compression_ratio[s] < 1.0 for s in range(num_scales-1)])
         
         # initialize context. Only upsample context in ContextInit if latent shape doesn't change during the flow.
         context_init = ContextInit(num_bits=num_bits,
@@ -76,7 +77,7 @@ class SRPoolFlow(ConditionalFlow):
                                                  num_steps=dequant_steps,
                                                  coupling_network=coupling_network,
                                                  num_context=dequant_context,
-                                                 num_blocks=4,
+                                                 num_blocks=dequant_blocks,
                                                  mid_channels=coupling_channels,
                                                  depth=coupling_depth,
                                                  dropout=0.0,
@@ -89,26 +90,34 @@ class SRPoolFlow(ConditionalFlow):
         # Change range from [0,1]^D to [-0.5, 0.5]^D
         transforms.append(ScalarAffineBijection(shift=-0.5))
 
-        # Initial squeeze
-        if (current_shape[1] > 32 and current_shape[2] > 32) or 0 not in checkerboard_scales:
-            # only do the initial squeeze for large images or when we do a channel-wise coupling split
+        # Initial squeezing
+        if current_shape[1] >= 128 and current_shape[2] >= 128:
+            # H x W -> 64 x 64
             transforms.append(Squeeze2d())
-            current_shape = (current_shape[0] * 4,
-                             current_shape[1] // 2,
-                             current_shape[2] // 2)
+            current_shape = (current_shape[0] * 4, current_shape[1] // 2, current_shape[2] // 2)
 
+        if current_shape[1] >= 64 and current_shape[2] >= 64:
+            # H x W -> 32 x 32
+            transforms.append(Squeeze2d())
+            current_shape = (current_shape[0] * 4, current_shape[1] // 2, current_shape[2] // 2)
+
+        if 0 not in checkerboard_scales or (current_shape[1] > 32 and current_shape[2] > 32):
+            # Only go to 16 x 16 if not doing checkerboard splits first
+            transforms.append(Squeeze2d())
+            current_shape = (current_shape[0] * 4, current_shape[1] // 2, current_shape[2] // 2)
+           
         # add in augmentation channels if desired
         if augment_size is not None and augment_size > 0:
             #transforms.append(Augment(StandardUniform((augment_size, current_shape[1], current_shape[2])), x_size=current_shape[0]))
             #transforms.append(Augment(StandardNormal((augment_size, current_shape[1], current_shape[2])), x_size=current_shape[0]))
             augment_flow = AugmentFlow(data_shape=current_shape,
                                        augment_size=augment_size,
-                                       num_steps=dequant_steps,
+                                       num_steps=augment_steps,
                                        coupling_network=coupling_network,
                                        mid_channels=coupling_channels,
-                                       num_context=dequant_context,
+                                       num_context=augment_context,
                                        num_mixtures=coupling_mixtures,
-                                       num_blocks=4,
+                                       num_blocks=augment_blocks,
                                        dropout=0.0,
                                        checkerboard=True,
                                        tuple_flip=tuple_flip)
@@ -121,7 +130,8 @@ class SRPoolFlow(ConditionalFlow):
 
             # First and Third scales use checkerboard split pattern
             checkerboard = scale in checkerboard_scales
-            context_out_shape = (current_shape[0], current_shape[1], current_shape[2] // 2) if checkerboard else current_shape
+            context_out_channels = min(current_shape[0], coupling_channels)
+            context_out_shape = (context_out_channels, current_shape[1], current_shape[2] // 2) if checkerboard else (context_out_channels, current_shape[1], current_shape[2])
 
             # reshape the context to the current size for all flow steps at this scale
             context_upsampler_net = UpsamplerNet(in_channels=lowres_encoder_channels, out_shape=context_out_shape, mid_channels=lowres_upsampler_channels)
@@ -139,7 +149,7 @@ class SRPoolFlow(ConditionalFlow):
                     transforms.append(ConditionalConv1x1(cond_shape=current_shape, out_channels=current_shape[0], mid_channels=conditional_channels, slogdet_cpu=True))
 
                 if coupling_network in ["conv", "densenet"]:
-                    transforms.append(SRCoupling(x_size=current_shape, 
+                    transforms.append(SRCoupling(x_size=context_out_shape, 
                                                  y_size=current_shape,
                                                  mid_channels=coupling_channels,
                                                  depth=coupling_depth,
@@ -151,7 +161,7 @@ class SRPoolFlow(ConditionalFlow):
                                                  flip=flip))
                     
                 elif coupling_network == "transformer":
-                    transforms.append(SRMixtureCoupling(x_size=current_shape,
+                    transforms.append(SRMixtureCoupling(x_size=context_out_shape,
                                                         y_size=current_shape,
                                                         mid_channels=coupling_channels,
                                                         dropout=coupling_dropout,
@@ -164,7 +174,7 @@ class SRPoolFlow(ConditionalFlow):
             transforms.append(ContextUpsampler(context_net=context_upsampler_net, direction='inverse'))
             
             if scale < num_scales-1:
-                if pooling == 'none':
+                if pooling == 'none' or compression_ratio[scale] == 0.0:
                     # fully bijective flow with multi-scale architecture
                     transforms.append(Squeeze2d())
                     current_shape = (current_shape[0] * 4,
