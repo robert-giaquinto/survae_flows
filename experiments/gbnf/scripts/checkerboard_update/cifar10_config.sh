@@ -8,6 +8,7 @@ warmup=10000
 exponential_lr=True
 early_stop=75
 eval_every=5
+check_every=0
 
 dataset=cifar10
 num_bits=8

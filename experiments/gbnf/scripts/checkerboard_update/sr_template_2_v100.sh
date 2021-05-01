@@ -58,6 +58,7 @@ time python experiments/gbnf/train.py \
     --max_grad_norm             ${max_grad_norm} \
     --early_stop                ${early_stop} \
     --eval_every                ${eval_every} \
+    --check_every               ${check_every} \
     \
     --flow                      ${flow} \
     --super_resolution          \

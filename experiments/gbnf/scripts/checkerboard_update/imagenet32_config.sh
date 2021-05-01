@@ -8,6 +8,7 @@ warmup=20000
 exponential_lr=True
 early_stop=0
 eval_every=1
+check_every=1
 
 dataset=imagenet32
 num_bits=8
