@@ -1,10 +1,16 @@
 import torch
 from torchvision.datasets import SVHN
+from torchvision.transforms import Compose, ToTensor
 from survae.data import DATA_PATH
 
 
 class SuperResolutionSVHNDataset(SVHN):
     def __init__(self, root=DATA_PATH, split='train', transform=None, download=False, sr_scale_factor=4):
+        if transform is None:
+            transform = Compose([ToTensor()])
+        else:
+            assert any([type(t) == ToTensor for t in transform]), "Data transform must include ToTensor for super-resolution"
+
         super(SuperResolutionSVHNDataset, self).__init__(root,
                                                          split=split,
                                                          transform=transform,

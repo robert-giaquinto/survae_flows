@@ -5,10 +5,42 @@ import numpy as np
 import errno
 import tarfile
 from PIL import Image
+from torchvision.transforms import Compose, ToTensor
+
 from survae.data import DATA_PATH
+from survae.data.datasets.image.unsupervised_wrappers.imagenet32 import UnsupervisedImageNet32Dataset
 
 
-class SuperResolutionImageNet32Dataset(data.Dataset):
+class SuperResolutionImageNet32Dataset(UnsupervisedImageNet32Dataset):
+    def __init__(self, root=DATA_PATH, train=True, transform=None, download=False, sr_scale_factor=4):
+
+        if transform is None:
+            transform = Compose([ToTensor()])
+        else:
+            assert any([type(t) == ToTensor for t in transform]), "Data transform must include ToTensor for super-resolution"
+
+        super(SuperResolutionImageNet32Dataset, self).__init__(root,
+                                                               train=train,
+                                                               transform=transform,
+                                                               download=download)
+        
+        assert isinstance(sr_scale_factor, int) and sr_scale_factor > 1
+        self.sr_scale_factor = sr_scale_factor
+
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+
+        Returns:
+            tuple: (image, target) where target is index of the target class.
+        """
+        hr, _ = super(SuperResolutionImageNet32Dataset, self).__getitem__(index)
+        lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+        return (hr, lr)
+
+
+class _SuperResolutionImageNet32Dataset(data.Dataset):
     """
     The ImageNet dataset of
     (Russakovsky et al., 2015): https://arxiv.org/abs/1409.0575

@@ -34,8 +34,7 @@ class UnsupervisedImageNet32Dataset(data.Dataset):
             if download:
                 self.download()
             else:
-                raise RuntimeError('Dataset not found.' +
-                                   ' You can use download=True to download it')
+                raise RuntimeError('Dataset not found. You can use download=True to download it')
 
         if not self._check_processed():
             self.process()

@@ -8,6 +8,7 @@ import zipfile
 import io
 from PIL import Image
 from torchvision.transforms.functional import crop, resize
+from torchvision.transforms import Compose, ToTensor
 
 from survae.data import DATA_PATH
 from survae.data.datasets.image.unsupervised_wrappers.celeba import UnsupervisedCelebA32Dataset, UnsupervisedCelebA64Dataset, UnsupervisedCelebA128Dataset
@@ -24,6 +25,12 @@ class SuperResolutionCelebA32Dataset(UnsupervisedCelebA32Dataset):
     processed_folder = 'celeba/processed32'
 
     def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4):
+
+        if transform is None:
+            transform = Compose([ToTensor()])
+        else:
+            assert any([type(t) == ToTensor for t in transform]), "Data transform must include ToTensor for super-resolution"
+
         super(SuperResolutionCelebA32Dataset, self).__init__(root=root, split=split, transform=transform)
 
         assert isinstance(sr_scale_factor, int) and sr_scale_factor > 1
@@ -57,6 +64,12 @@ class SuperResolutionCelebA64Dataset(UnsupervisedCelebA64Dataset):
     processed_folder = 'celeba/processed64'
 
     def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4):
+
+        if transform is None:
+            transform = Compose([ToTensor()])
+        else:
+            assert any([type(t) == ToTensor for t in transform]), "Data transform must include ToTensor for super-resolution"
+
         super(UnsupervisedCelebA64Dataset, self).__init__(root=root, split=split, transform=transform)
 
         assert isinstance(sr_scale_factor, int) and sr_scale_factor > 1
@@ -90,6 +103,12 @@ class SuperResolutionCelebA128Dataset(UnsupervisedCelebA128Dataset):
     processed_folder = 'celeba/processed128'
 
     def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4):
+
+        if transform is None:
+            transform = Compose([ToTensor()])
+        else:
+            assert any([type(t) == ToTensor for t in transform]), "Data transform must include ToTensor for super-resolution"
+
         super(UnsupervisedCelebA128Dataset, self).__init__(root=root, split=split, transform=transform)
 
         assert isinstance(sr_scale_factor, int) and sr_scale_factor > 1

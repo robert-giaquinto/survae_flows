@@ -1,10 +1,18 @@
 import torch
 from torchvision.datasets import CIFAR10
+from torchvision.transforms import Compose, ToTensor
+
 from survae.data import DATA_PATH
 
 
 class SuperResolutionCIFAR10Dataset(CIFAR10):
     def __init__(self, root=DATA_PATH, train=True, transform=None, download=False, sr_scale_factor=4):
+
+        if transform is None:
+            transform = Compose([ToTensor()])
+        else:
+            assert any([type(t) == ToTensor for t in transform]), "Data transform must include ToTensor for super-resolution"
+
         super(SuperResolutionCIFAR10Dataset, self).__init__(root,
                                                             train=train,
                                                             transform=transform,
