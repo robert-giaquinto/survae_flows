@@ -190,7 +190,8 @@ class FlowExperiment(BaseExperiment):
         self.model.train()
         loss_sum = 0.0
         loss_count = 0
-        for x in self.train_loader:
+        print_every = max(1, (len(self.train_loader.dataset) // self.args.batch_size) // 10)
+        for i, x in enumerate(self.train_loader):
 
             # Cast operations to mixed precision
             if self.args.super_resolution or self.args.conditional:
@@ -222,7 +223,8 @@ class FlowExperiment(BaseExperiment):
             # accumulate loss and report
             loss_sum += loss.detach().cpu().item() * batch_size
             loss_count += batch_size
-            self.log_epoch("Training", loss_count, len(self.train_loader.dataset), loss_sum)
+            if i % print_every == 0 or i == (len(self.train_loader) - 1):
+                self.log_epoch("Training", loss_count, len(self.train_loader.dataset), loss_sum)
 
         print('')
         if self.scheduler_epoch:
@@ -234,7 +236,8 @@ class FlowExperiment(BaseExperiment):
         self.model.train()
         loss_sum = 0.0
         loss_count = 0
-        for x in self.train_loader:
+        print_every = max(1, (len(self.train_loader.dataset) // self.args.batch_size) // 10)
+        for i, x in enumerate(self.train_loader):
             self.optimizer.zero_grad()
 
             if self.args.super_resolution or self.args.conditional:
@@ -255,7 +258,8 @@ class FlowExperiment(BaseExperiment):
 
             loss_sum += loss.detach().cpu().item() * batch_size
             loss_count += batch_size
-            self.log_epoch("Training", loss_count, len(self.train_loader.dataset), loss_sum)
+            if i % print_every == 0 or i == (len(self.train_loader) - 1):
+                self.log_epoch("Training", loss_count, len(self.train_loader.dataset), loss_sum)
 
         print('')
         if self.scheduler_epoch:
@@ -278,8 +282,8 @@ class FlowExperiment(BaseExperiment):
 
                 loss_sum += loss.detach().cpu().item() * batch_size
                 loss_count += batch_size
-                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(
-                    epoch+1, self.args.epochs, loss_count, len(self.eval_loader.dataset), loss_sum/loss_count), end='\r')
+                
+            self.log_epoch("Evaluating", loss_count, len(self.eval_loader.dataset), loss_sum)
             print('')
         return {'bpd': loss_sum/loss_count}
 
@@ -305,13 +309,11 @@ class FlowExperiment(BaseExperiment):
             path_true_samples = '{}/samples/true_e{}_s{}.png'.format(self.log_path, self.current_epoch+1, self.args.seed)
             self.save_images(imgs, path_true_samples)
 
-    # def _sample_fn(self, checkpoint):
     def _sample_fn(self, temperature=None):
         path_samples = '{}/samples/sample_e{}_s{}.png'.format(self.log_path, self.current_epoch+1, self.args.seed)
         samples = self.model.sample(self.args.samples, temperature=temperature)
         self.save_images(samples, path_samples)
 
-    # def _cond_sample_fn(self, context, checkpoint):
     def _cond_sample_fn(self, context, temperature=None, save_context=True):
         if save_context:
             # save low-resolution samples
