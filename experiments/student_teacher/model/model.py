@@ -65,6 +65,11 @@ def get_model(args):
         teacher_model.load_state_dict(checkpoint['model'])
         print('Loaded weights for teacher model at {}/{} epochs'.format(checkpoint['current_epoch'], teacher_args.epochs))
 
+        if args.cond_trans.lower().startswith("split") or args.cond_trans.lower().startswith("multiply"):
+            cond_size = 1
+        else:
+            cond_size = 2
+        
         student_model = SRFlow(num_flows=args.num_flows,
                                actnorm=args.actnorm,
                                affine=args.affine,
@@ -73,6 +78,7 @@ def get_model(args):
                                activation=args.activation,
                                range_flow=args.range_flow,
                                augment_size=args.augment_size,
-                               base_dist=args.base_dist)
+                               base_dist=args.base_dist,
+                               cond_size=cond_size)
         
         return student_model, teacher_model, teacher_args.dataset

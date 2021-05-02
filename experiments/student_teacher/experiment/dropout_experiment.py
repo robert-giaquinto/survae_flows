@@ -1,5 +1,6 @@
 import torch
 import torchvision.utils as vutils
+import numpy as np
 
 from survae.distributions import DataParallelDistribution
 from .utils import get_args_table, clean_dict
@@ -20,7 +21,7 @@ import wandb
 import matplotlib.pyplot as plt
 
 
-class StudentExperiment(BaseExperiment):
+class DropoutExperiment(BaseExperiment):
 
     log_base = os.path.join(get_survae_path(), 'experiments/student_teacher/log')
     no_log_keys = ['project', 'name',
@@ -42,10 +43,8 @@ class StudentExperiment(BaseExperiment):
         if args.project is None:
             args.project = '_'.join([data_id, model_id])
 
-        aug_or_abs = 'abs' if args.augment_size == 0 else f"aug{args.augment_size}"
-        hidden = '_'.join([str(u) for u in args.hidden_units])
         cond_id = args.cond_trans.lower()
-        arch_id = f"flow_{aug_or_abs}_k{args.num_flows}_h{hidden}_{'affine' if args.affine else 'additive'}{'_actnorm' if args.actnorm else ''}"
+        arch_id = f"Dropout_h{args.hidden_units}"
         seed_id = f"seed{args.seed}"
         if args.name == "debug":
             log_path = os.path.join(
@@ -60,7 +59,7 @@ class StudentExperiment(BaseExperiment):
             model = DataParallelDistribution(model)
         
         # Init parent
-        super(StudentExperiment, self).__init__(model=model,
+        super(DropoutExperiment, self).__init__(model=model,
                                                 optimizer=optimizer,
                                                 scheduler_iter=scheduler_iter,
                                                 scheduler_epoch=scheduler_epoch,
@@ -151,7 +150,7 @@ class StudentExperiment(BaseExperiment):
         if self.args.resume:
             self.resume()
             
-        super(StudentExperiment, self).run(epochs=self.args.epochs)
+        super(DropoutExperiment, self).run(epochs=self.args.epochs)
 
     def train_fn(self, epoch):
         if self.amp:
@@ -178,7 +177,7 @@ class StudentExperiment(BaseExperiment):
                 x = self.cond_fn(y)
                 
             with torch.cuda.amp.autocast():
-                loss = -self.model.log_prob(y, context=x).mean()
+                loss = self.model.loss(x, y)
 
             # Scale loss and call backward() to create scaled gradients
             self.scaler.scale(loss).backward()
@@ -213,7 +212,7 @@ class StudentExperiment(BaseExperiment):
         self.teacher.eval()
         loss_sum = 0.0
         loss_count = 0
-        iters_per_epoch = self.args.train_samples // self.args.batch_size
+        iters_per_epoch = max(1, self.args.train_samples // self.args.batch_size)
         for i in range(iters_per_epoch):
 
             with torch.no_grad():
@@ -221,7 +220,7 @@ class StudentExperiment(BaseExperiment):
                 x = self.cond_fn(y)
 
             self.optimizer.zero_grad()
-            loss = -self.model.log_prob(y, context=x).mean()
+            loss = self.model.loss(x, y)
             loss.backward()
 
             if self.max_grad_norm > 0:
@@ -242,24 +241,30 @@ class StudentExperiment(BaseExperiment):
         return {'nll': loss_sum/loss_count}
 
     def eval_fn(self, epoch):
+        K_test = 2 # Number of MC samples
+        
         self.model.eval()
         self.teacher.eval()
         with torch.no_grad():
-            loss_sum = 0.0
-            loss_count = 0
-            iters_per_epoch = self.args.test_samples // self.args.batch_size
-            for i in range(iters_per_epoch):
-                y = self.teacher.sample(num_samples=self.args.batch_size)
-                x = self.cond_fn(y)
-                loss = -self.model.log_prob(y, context=x).mean()
-                loss_sum += loss.detach().cpu().item() * self.args.batch_size
-                loss_count += self.args.batch_size
-                print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, NLL: {:.3f}'.format(
-                    epoch+1, self.args.epochs, loss_count, self.args.test_samples, loss_sum/loss_count), end='\r')
-            print('')
-        return {'nll': loss_sum/loss_count}
+            y = self.teacher.sample(num_samples=self.args.test_samples)
+            x = self.cond_fn(y)
+            MC_samples = [self.model(x) for _ in range(K_test)]
+            x = x.numpy()
+            y = y.numpy()
 
-    def plot_fn(self):
+        means = torch.stack([tup[0] for tup in MC_samples]).view(K_test, x.shape[0], 2).cpu().data.numpy()
+        logvar = torch.stack([tup[1] for tup in MC_samples]).view(K_test, x.shape[0], 2).cpu().data.numpy()
+
+        test_ll = -0.5 * np.exp(-logvar) * (means - y.squeeze())**2.0 - 0.5 * logvar - 0.5 * np.log(2 * np.pi)
+        test_ll = np.sum(np.sum(test_ll, -1), -1)
+        test_ll = logsumexp(test_ll) - np.log(K_test)
+        #pppp = test_ll / self.args.test_samples  # per point predictive probability
+        rmse = np.mean((np.mean(means, 0) - y)**2.0)**0.5
+        
+        print("Eval:", rmse, "test LL:", test_ll)
+        return {'rmse': rmse}
+    
+    def plot_fn(self):        
         plot_path = os.path.join(self.log_path, "samples/")
         if not os.path.exists(plot_path):
             os.mkdir(plot_path)
@@ -282,40 +287,51 @@ class StudentExperiment(BaseExperiment):
         with torch.no_grad():
             y = self.teacher.sample(num_samples=self.args.num_samples)
             x = self.cond_fn(y)
-            samples = self.model.sample(context=x, temperature=0.4)
-            samples = samples.cpu().numpy()
+            y_mean, y_logvar, _ = self.model(x)
 
+        y_mean = y_mean.cpu().numpy()
+        y_var = np.exp(y_logvar.cpu().numpy())
+        temperature = 0.4
+        samples = [np.random.normal(y_mean[:, i], y_var[:, i] * temperature, self.args.num_samples).T[:, np.newaxis] \
+                   for i in range(y_mean.shape[1])]
+        samples = np.hstack(samples)
+        #samples = y_mean.cpu().numpy()
         plt.figure(figsize=(self.args.pixels/self.args.dpi, self.args.pixels/self.args.dpi), dpi=self.args.dpi)
         plt.hist2d(samples[...,0], samples[...,1], bins=256, range=bounds)
         plt.xlim(bounds[0])
         plt.ylim(bounds[1])
         plt.axis('off')
         plt.savefig(os.path.join(plot_path, f'varying_context_flow_samples.png'), bbox_inches='tight', pad_inches=0)
-
+        
         # Plot density
         xv, yv = torch.meshgrid([torch.linspace(bounds[0][0], bounds[0][1], self.args.grid_size), torch.linspace(bounds[1][0], bounds[1][1], self.args.grid_size)])
         y = torch.cat([xv.reshape(-1,1), yv.reshape(-1,1)], dim=-1).to(self.args.device)
-        x = self.cond_fn(y)
         with torch.no_grad():
-            logprobs = self.model.log_prob(y, context=x)
-            logprobs = logprobs - logprobs.max().item()
-            
+            x = self.cond_fn(y)
+            means, logvar, _ = self.model(x)
+        logprobs = -0.5 * torch.exp(-logvar) * (means - y)**2.0 - 0.5 * logvar - 0.5 * np.log(2 * np.pi)
+        logprobs = torch.sum(logprobs, dim=1)
+        logprobs = logprobs - logprobs.max()
+        probs = torch.exp(logprobs)
         plt.figure(figsize=(self.args.pixels/self.args.dpi, self.args.pixels/self.args.dpi), dpi=self.args.dpi)
-        plt.pcolormesh(xv, yv, logprobs.exp().reshape(xv.shape))
+        plt.pcolormesh(xv, yv, probs.reshape(xv.shape), shading='auto')
         plt.xlim(bounds[0])
         plt.ylim(bounds[1])
         plt.axis('off')
-        print('Range:', logprobs.exp().min().item(), logprobs.exp().max().item())
-        print('Limits:', 0.0, self.args.clim)
         plt.clim(0,self.args.clim)
         plt.savefig(os.path.join(plot_path, f'varying_context_flow_density.png'), bbox_inches='tight', pad_inches=0)
 
         # plot samples with fixed context
         for i, x in enumerate(self.context_permutations()):
             with torch.no_grad():
-                #y = self.teacher.sample(num_samples=1).expand((self.args.num_samples, 2))
-                samples = self.model.sample(context=x.expand((self.args.num_samples, self.cond_size)), temperature=1.5).cpu().numpy()
-
+                y_mean, y_logvar, _ = self.model(x.expand((self.args.num_samples, self.cond_size)))
+            y_mean = y_mean.cpu().numpy()
+            y_var = np.exp(y_logvar.cpu().numpy())
+            temperature = 1.5
+            samples = [np.random.normal(y_mean[:, i], y_var[:, i] * temperature, self.args.num_samples).T[:, np.newaxis] \
+                       for i in range(y_mean.shape[1])]
+            samples = np.hstack(samples)
+            #samples = y_mean.cpu().numpy()
             plt.figure(figsize=(self.args.pixels/self.args.dpi, self.args.pixels/self.args.dpi), dpi=self.args.dpi)
             plt.hist2d(samples[...,0], samples[...,1], bins=256, range=bounds)
             plt.xlim(bounds[0])
@@ -327,19 +343,25 @@ class StudentExperiment(BaseExperiment):
             xv, yv = torch.meshgrid([torch.linspace(bounds[0][0], bounds[0][1], self.args.grid_size), torch.linspace(bounds[1][0], bounds[1][1], self.args.grid_size)])
             y = torch.cat([xv.reshape(-1,1), yv.reshape(-1,1)], dim=-1).to(self.args.device)
             with torch.no_grad():
-                logprobs = self.model.log_prob(y, context=x.expand((y.size(0), self.cond_size)))
-                logprobs = logprobs - logprobs.max().item()
-
+                means, logvar, _ = self.model(x.view(1,self.cond_size))
+                means = means.expand((y.size(0), 2))
+                logvar = logvar.expand((y.size(0), 2))
+                logprobs = -0.5 * torch.exp(-logvar) * (means - y)**2.0 - 0.5 * logvar - 0.5 * np.log(2 * np.pi)
+                logprobs = torch.sum(logprobs, dim=1)
+                logprobs = logprobs - logprobs.max()
+                probs = torch.exp(logprobs)
             plt.figure(figsize=(self.args.pixels/self.args.dpi, self.args.pixels/self.args.dpi), dpi=self.args.dpi)
-            plt.pcolormesh(xv, yv, logprobs.exp().reshape(xv.shape))
+            plt.pcolormesh(xv, yv, probs.reshape(xv.shape), shading='auto')
             plt.xlim(bounds[0])
             plt.ylim(bounds[1])
             plt.axis('off')
-            print('Range:', logprobs.exp().min().item(), logprobs.exp().max().item())
-            print('Limits:', 0.0, self.args.clim)
             plt.clim(0,self.args.clim)
             plt.savefig(os.path.join(plot_path, f'fixed_context_flow_density_{i}.png'), bbox_inches='tight', pad_inches=0)
+
     
+def logsumexp(a):
+    a_max = a.max(axis=0)
+    return np.log(np.sum(np.exp(a - a_max), axis=0)) + a_max
 
 
 

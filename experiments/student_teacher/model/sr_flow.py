@@ -12,26 +12,16 @@ from survae.nn.layers import ElementwiseParams, LambdaLayer, scale_fn
 from model.layers import ShiftBijection, ScaleBijection
 
 
-class ContextInit(nn.Module):
-    def __init__(self, in_size, out_size):
-        super(ContextInit, self).__init__()
-        self.dense = nn.Sequential(nn.Linear(in_size, out_size), nn.ReLU())
-        
-    def forward(self, context):
-        return self.dense(context)
-
-
 class SRFlow(ConditionalFlow):
 
-    def __init__(self, num_flows, actnorm, affine, scale_fn_str, hidden_units, activation, range_flow, augment_size, base_dist):
+    def __init__(self, num_flows, actnorm, affine, scale_fn_str, hidden_units, activation, range_flow, augment_size, base_dist, cond_size):
         
         D = 2 # Number of data dimensions
         A = D + augment_size # Number of augmented data dimensions
         P = 2 if affine else 1 # Number of elementwise parameters
 
         # initialize context. Only upsample context in ContextInit if latent shape doesn't change during the flow.
-        context_size = D
-        context_init = ContextInit(context_size, context_size)
+        context_init = MLP(input_size=cond_size, output_size=D, hidden_units=hidden_units, activation=activation)
 
         # initialize flow with either augmentation or Abs surjection
         if augment_size > 0:
@@ -40,15 +30,15 @@ class SRFlow(ConditionalFlow):
 
         else:
             transforms = []
-            # transforms=[SimpleAbsSurjection()]
-            # if range_flow == 'logit':
-            #     transforms += [ScaleBijection(scale=torch.tensor([[1/4, 1/4]])), Logit()]
-            # elif range_flow == 'softplus':
-            #     transforms += [SoftplusInverse()]
+            transforms=[SimpleAbsSurjection()]
+            if range_flow == 'logit':
+                transforms += [ScaleBijection(scale=torch.tensor([[1/4, 1/4]])), Logit()]
+            elif range_flow == 'softplus':
+                transforms += [SoftplusInverse()]
                     
         # apply coupling layer flows
         for _ in range(num_flows):
-            net = nn.Sequential(MLP(A // 2 + context_size,
+            net = nn.Sequential(MLP(A // 2 + D,
                                     P * A // 2,
                                     hidden_units=hidden_units,
                                     activation=activation),

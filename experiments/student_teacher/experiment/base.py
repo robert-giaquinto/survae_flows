@@ -17,6 +17,9 @@ def add_exp_args(parser):
     parser.add_argument('--amp', type=eval, default=False, help="Use automatic mixed precision")
     parser.add_argument('--resume', type=str, default=None)
     parser.add_argument('--teacher_model', type=str, default=None, help="Path to a pretrained teacher model")
+    parser.add_argument('--cond_trans', type=str, default='quantize',
+                        choices={'quantize', 'quantize4', 'quantize9', 'quantize16', 'quantize25', 'quantize36', 'split', 'split0', 'split1', 'random', 'multiply'},
+                        help="Transformation type used to create low-dimensional data for super-resolution model.")
 
     # Train params
     parser.add_argument('--epochs', type=int, default=10)
@@ -196,6 +199,61 @@ class BaseExperiment(object):
 
         # Plotting
         self.plot_fn()
+
+    def cond_fn(self, y):
+        """
+        Defines how the 'high-resolution' data y should be changed into a 'low-resolution' sample.
+        """
+        if self.args.dataset == 'face_einstein':
+            ymin = 0
+            ymax = 1
+        else:
+            ymin = -4
+            ymax = 4
+            
+        y = (y - ymin) / (ymax - ymin)  # set range to [0, 1]
+        if self.cond_id == "quantize" or self.cond_id == "quantize4":
+            x = torch.round(y)  # x is either 0 or 1, so 2D x has four possible outputs
+        elif self.cond_id == "quantize9":
+            x = torch.round(2 * y)  # x can be 0, 1, or 2, and a 2D x will have 9 possible outputs
+        elif self.cond_id == "quantize16":
+            x = torch.round(3 * y)
+        elif self.cond_id == "quantize25":
+            x = torch.round(4 * y)
+        elif self.cond_id == "quantize36":
+            x = torch.round(5 * y)
+        elif self.cond_id == "split" or self.cond_id == "split0":
+            x = torch.round(100.0 * y[:, :1]) / 100.0
+        elif self.cond_id == "split1":
+            x = torch.round(100.0 * y[:, 1:]) / 100.0
+        elif self.cond_id == "multiply":
+            x = torch.round(100.0 * y[:, :1] * y[:, 1:]) / 100.0
+        elif self.cond_id == "random":
+            r = torch.rand_like(y)
+            x = y.masked_fill_(r == r.max(dim=1).values.view(y.size(0), 1), 0.0)
+        else:
+            raise ValueError(f"Conditional transformation {self.cond_id} is unknown.")
+            
+        return x
+
+    def context_permutations(self, ymin=-10, ymax=10):
+        if self.args.dataset == 'face_einstein':
+            bounds = [[0, 1], [0, 1]]
+        else:
+            bounds = [[-4, 4], [-4, 4]]
+
+        xv, yv = torch.meshgrid([torch.linspace(bounds[0][0], bounds[0][1], self.args.grid_size), torch.linspace(bounds[1][0], bounds[1][1], self.args.grid_size)])
+        y = torch.cat([xv.reshape(-1,1), yv.reshape(-1,1)], dim=-1).to(self.args.device)
+        x = self.cond_fn(y).unique(sorted=True, dim=0)
+
+        if x.shape[0] > 10:
+            x = torch.round(10.0 * x)/10.0
+            x = x.unique(sorted=True, dim=0)
+
+        print("Conditional permuations:\n", x.data)
+        
+        return x
+
 
                     
 
