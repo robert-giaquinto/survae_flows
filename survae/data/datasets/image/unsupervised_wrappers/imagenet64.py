@@ -146,8 +146,7 @@ class UnsupervisedImageNet64Dataset(data.Dataset):
         return os.path.exists(self.processed_train_folder) and os.path.exists(self.processed_valid_folder)
 
     def _check_raw(self):
-        #return os.path.exists(self.raw_file_paths[0]) and os.path.exists(self.raw_file_paths[1]) and os.path.exists(self.raw_file_paths[2])
-        return os.path.exists(self.raw_file_paths[2])
+        return os.path.exists(self.raw_file_paths[0]) and os.path.exists(self.raw_file_paths[1]) and os.path.exists(self.raw_file_paths[2])
 
     def download(self):
         """Download the data if it doesn't exist in processed_folder already."""
@@ -172,19 +171,19 @@ class UnsupervisedImageNet64Dataset(data.Dataset):
 
     def process(self):
 
-        # print(f"Extracting training data from {self.raw_file_paths[0]} into {self.processed_train_folder}")
-        # with zipfile.ZipFile(self.raw_file_paths[0]) as zip_file:
-        #     for zip_info in zip_file.infolist():
-        #         if zip_info.filename[-1] == '/': continue
-        #         zip_info.filename = os.path.basename(zip_info.filename)
-        #         zip_file.extract(zip_info, self.processed_train_folder)
+        print(f"Extracting training data from {self.raw_file_paths[0]} into {self.processed_train_folder}")
+        with zipfile.ZipFile(self.raw_file_paths[0]) as zip_file:
+            for zip_info in zip_file.infolist():
+                if zip_info.filename[-1] == '/': continue
+                zip_info.filename = os.path.basename(zip_info.filename)
+                zip_file.extract(zip_info, self.processed_train_folder)
 
-        # print(f"Extracting training data from {self.raw_file_paths[1]} into {self.processed_train_folder}")
-        # with zipfile.ZipFile(self.raw_file_paths[1]) as zip_file:
-        #     for zip_info in zip_file.infolist():
-        #         if zip_info.filename[-1] == '/': continue
-        #         zip_info.filename = os.path.basename(zip_info.filename)
-        #         zip_file.extract(zip_info, self.processed_train_folder)
+        print(f"Extracting training data from {self.raw_file_paths[1]} into {self.processed_train_folder}")
+        with zipfile.ZipFile(self.raw_file_paths[1]) as zip_file:
+            for zip_info in zip_file.infolist():
+                if zip_info.filename[-1] == '/': continue
+                zip_info.filename = os.path.basename(zip_info.filename)
+                zip_file.extract(zip_info, self.processed_train_folder)
         
         print(f"Extracting validation data from {self.raw_file_paths[2]} into {self.processed_valid_folder}")
         with zipfile.ZipFile(self.raw_file_paths[2]) as zip_file:
