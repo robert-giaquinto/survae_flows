@@ -25,30 +25,31 @@ class UnsupervisedImageNet64Dataset(data.Dataset):
     ]
 
     urls = [
+        'https://image-net.org/data/downsample/Imagenet64_train_part1_npz.zip',
+        'https://image-net.org/data/downsample/Imagenet64_train_part2_npz.zip',
+        'https://image-net.org/data/downsample/Imagenet64_val_npz.zip'
+    ]
+    """
+
+    urls = [
         'https://image-net.org/data/downsample/Imagenet64_train_part1.zip',
         'https://image-net.org/data/downsample/Imagenet64_train_part2.zip',
         'https://image-net.org/data/downsample/Imagenet64_val.zip'
     ]
 
-    """
-    urls = [
-        'https://image-net.org/data/downsample/Imagenet64_train_part1_npz.zip',
-        'https://image-net.org/data/downsample/Imagenet64_train_part2_npz.zip',
-        'https://image-net.org/data/downsample/Imagenet64_val_npz.zip'
-    ]
     train_list = [
-        'train_data_batch_1.npz',
-        'train_data_batch_2.npz',
-        'train_data_batch_3.npz',
-        'train_data_batch_4.npz',
-        'train_data_batch_5.npz',
-        'train_data_batch_6.npz',
-        'train_data_batch_7.npz',
-        'train_data_batch_8.npz',
-        'train_data_batch_9.npz',
-        'train_data_batch_10.npz'
+        'train_data_batch_1',
+        'train_data_batch_2',
+        'train_data_batch_3',
+        'train_data_batch_4',
+        'train_data_batch_5',
+        'train_data_batch_6',
+        'train_data_batch_7',
+        'train_data_batch_8',
+        'train_data_batch_9',
+        'train_data_batch_10'
     ]
-    test_list = ['val_data.npz']
+    test_list = ['val_data']
     
     raw_folder = 'imagenet64/raw'
     processed_folder = 'imagenet64/processed'
@@ -64,12 +65,10 @@ class UnsupervisedImageNet64Dataset(data.Dataset):
             if download:
                 self.download()
             else:
-                print(self.raw_file_paths[2])
-                raise RuntimeError('Dataset not found. You can use download=True to download it')
+                raise RuntimeError(f'Datasets  not found. You can use download=True to download: {self.raw_file_paths}')
 
         if not self._check_processed():
             self.process()
-
         
         # now load the picked numpy arrays
         if self.train:
@@ -94,7 +93,7 @@ class UnsupervisedImageNet64Dataset(data.Dataset):
             with open(os.path.join(self.processed_valid_folder, self.test_list[0]), 'rb') as fo:
                 entry = pickle.load(fo, encoding='latin1')
                 self.data = entry['data']
-                [picnum,pixel]= self.data.shape
+                [picnum, pixel]= self.data.shape
                 pixel = int(np.sqrt(pixel/3))
                 # if 'labels' in entry:
                 #     self.labels = entry['labels']
@@ -124,7 +123,7 @@ class UnsupervisedImageNet64Dataset(data.Dataset):
         return img
 
     def __len__(self):
-        return len(self.files)
+        return len(self.data)
 
     @property
     def raw_file_paths(self):
@@ -169,25 +168,18 @@ class UnsupervisedImageNet64Dataset(data.Dataset):
             print('Downloading ' + url)
             urllib.request.urlretrieve(url, file_path)
 
+    def process_file(fname, out_dir):
+        print(f"Extracting data from {fname} into {out_dir}. Flattening zipped folder structure.")
+        with zipfile.ZipFile(fname) as zip_file:
+            for zip_info in zip_file.infolist():
+                # if zip_info.filename[-1] == '/':
+                #     continue
+
+                # zip_info.filename = os.path.basename(zip_info.filename)
+                zip_file.extract(zip_info, out_dir)
+
+
     def process(self):
-
-        print(f"Extracting training data from {self.raw_file_paths[0]} into {self.processed_train_folder}")
-        with zipfile.ZipFile(self.raw_file_paths[0]) as zip_file:
-            for zip_info in zip_file.infolist():
-                if zip_info.filename[-1] == '/': continue
-                zip_info.filename = os.path.basename(zip_info.filename)
-                zip_file.extract(zip_info, self.processed_train_folder)
-
-        print(f"Extracting training data from {self.raw_file_paths[1]} into {self.processed_train_folder}")
-        with zipfile.ZipFile(self.raw_file_paths[1]) as zip_file:
-            for zip_info in zip_file.infolist():
-                if zip_info.filename[-1] == '/': continue
-                zip_info.filename = os.path.basename(zip_info.filename)
-                zip_file.extract(zip_info, self.processed_train_folder)
-        
-        print(f"Extracting validation data from {self.raw_file_paths[2]} into {self.processed_valid_folder}")
-        with zipfile.ZipFile(self.raw_file_paths[2]) as zip_file:
-            for zip_info in zip_file.infolist():
-                if zip_info.filename[-1] == '/': continue
-                zip_info.filename = os.path.basename(zip_info.filename)
-                zip_file.extract(zip_info, self.processed_valid_folder)
+        self.process_file(self.raw_file_paths[0], self.processed_train_folder)
+        self.process_file(self.raw_file_paths[1], self.processed_train_folder)
+        self.process_file(self.raw_file_paths[2], self.processed_valid_folder)
