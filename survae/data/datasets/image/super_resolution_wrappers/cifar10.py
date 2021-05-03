@@ -10,8 +10,6 @@ class SuperResolutionCIFAR10Dataset(CIFAR10):
 
         if transform is None:
             transform = Compose([ToTensor()])
-        else:
-            assert any([type(t) == ToTensor for t in transform]), "Data transform must include ToTensor for super-resolution"
 
         super(SuperResolutionCIFAR10Dataset, self).__init__(root,
                                                             train=train,
