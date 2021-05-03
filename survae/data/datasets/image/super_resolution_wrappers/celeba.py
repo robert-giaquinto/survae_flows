@@ -65,8 +65,6 @@ class SuperResolutionCelebA64Dataset(UnsupervisedCelebA64Dataset):
 
         if transform is None:
             transform = Compose([ToTensor()])
-        else:
-            assert any([type(t) == ToTensor for t in transform]), "Data transform must include ToTensor for super-resolution"
 
         super(UnsupervisedCelebA64Dataset, self).__init__(root=root, split=split, transform=transform)
 
@@ -104,8 +102,6 @@ class SuperResolutionCelebA128Dataset(UnsupervisedCelebA128Dataset):
 
         if transform is None:
             transform = Compose([ToTensor()])
-        else:
-            assert any([type(t) == ToTensor for t in transform]), "Data transform must include ToTensor for super-resolution"
 
         super(UnsupervisedCelebA128Dataset, self).__init__(root=root, split=split, transform=transform)
 
