@@ -33,7 +33,7 @@ class SuperResolutionImageNet32Dataset(UnsupervisedImageNet32Dataset):
         Returns:
             tuple: (image, target) where target is index of the target class.
         """
-        hr, _ = super(SuperResolutionImageNet32Dataset, self).__getitem__(index)
+        hr = super(SuperResolutionImageNet32Dataset, self).__getitem__(index)
         lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
         return (hr, lr)
 
