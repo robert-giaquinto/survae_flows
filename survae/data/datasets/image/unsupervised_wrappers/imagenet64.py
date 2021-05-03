@@ -37,18 +37,18 @@ class UnsupervisedImageNet64Dataset(data.Dataset):
         'https://image-net.org/data/downsample/Imagenet64_val_npz.zip'
     ]
     train_list = [
-        'train_data_batch_1',
-        'train_data_batch_2',
-        'train_data_batch_3',
-        'train_data_batch_4',
-        'train_data_batch_5',
-        'train_data_batch_6',
-        'train_data_batch_7',
-        'train_data_batch_8',
-        'train_data_batch_9',
-        'train_data_batch_10'
+        'train_data_batch_1.npz',
+        'train_data_batch_2.npz',
+        'train_data_batch_3.npz',
+        'train_data_batch_4.npz',
+        'train_data_batch_5.npz',
+        'train_data_batch_6.npz',
+        'train_data_batch_7.npz',
+        'train_data_batch_8.npz',
+        'train_data_batch_9.npz',
+        'train_data_batch_10.npz'
     ]
-    test_list = ['val_data']
+    test_list = ['val_data.npz']
     
     raw_folder = 'imagenet64/raw'
     processed_folder = 'imagenet64/processed'
