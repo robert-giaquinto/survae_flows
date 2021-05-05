@@ -36,6 +36,8 @@ torch.manual_seed(eval_args.seed)
 with open(path_args, 'rb') as f:
     args = pickle.load(f)
 
+args.batch_size = max(args.batch_size, eval_args.samples)
+
 ##################
 ## Specify data ##
 ##################
