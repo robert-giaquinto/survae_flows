@@ -4,7 +4,7 @@ import torch
 import pickle
 import argparse
 import torchvision.utils as vutils
-from survae.utils import dataset_elbo_bpd, dataset_iwbo_bpd
+from survae.utils import dataset_elbo_bpd, dataset_iwbo_bpd, dataset_cond_elbo_bpd, dataset_cond_iwbo_bpd
 
 # Data
 from data.data import get_data, get_data_id, add_data_args
@@ -42,7 +42,7 @@ with open(path_args, 'rb') as f:
 ## Specify data ##
 ##################
 
-train_loader, eval_loader, data_shape = get_data(args)
+_, eval_loader, data_shape, cond_shape = get_data(args)
 
 # Adjust args
 args.batch_size = eval_args.batch_size
@@ -51,7 +51,7 @@ args.batch_size = eval_args.batch_size
 ## Specify model ##
 ###################
 
-model = get_model(args, data_shape=data_shape)
+model = get_model(args, data_shape=data_shape, cond_shape=cond_shape)
 if args.parallel == 'dp':
     model = DataParallelDistribution(model)
 checkpoint = torch.load(path_check)
@@ -69,10 +69,19 @@ if eval_args.double: model = model.double()
 
 if eval_args.k is None:
     eval_str = 'elbo'
-    bpd = dataset_elbo_bpd(model, eval_loader, device=device, double=eval_args.double)
+
+    if args.super_resolution or args.conditional:
+        bpd = dataset_cond_elbo_bpd(model, eval_loader, device=device, double=eval_args.double)
+    else:
+        bpd = dataset_elbo_bpd(model, eval_loader, device=device, double=eval_args.double)
+
 else:
     eval_str = 'iwbo{}'.format(eval_args.k)
-    bpd = dataset_iwbo_bpd(model, eval_loader, k=eval_args.k, kbs=eval_args.kbs, device=device, double=eval_args.double)
+    if args.super_resolution or args.conditional:
+        bpd = dataset_cond_iwbo_bpd(model, eval_loader, k=eval_args.k, kbs=eval_args.kbs, device=device, double=eval_args.double)
+    else:
+        bpd = dataset_iwbo_bpd(model, eval_loader, k=eval_args.k, kbs=eval_args.kbs, device=device, double=eval_args.double)
+
 
 
 path_loglik = '{}/loglik/{}_ep{}.txt'.format(eval_args.model, eval_str, checkpoint['current_epoch'])

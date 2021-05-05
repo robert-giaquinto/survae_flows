@@ -139,7 +139,7 @@ def dataset_cond_elbo_nats(model, data_loader, device, double=False, verbose=Tru
             if double: x = [x[0].double(), x[1].double()]
             context = x[1].to(device)
             x = x[0].to(device)
-            nats += cond_elbo_nats(model, x, context=context).cpu().item9) * len(x)
+            nats += cond_elbo_nats(model, x, context=context).cpu().item() * len(x)
             count += len(x)
             if verbose: print('{}/{}'.format(i+1, len(data_loader)), nats/count, end='\r')
     return nats / count

@@ -25,6 +25,7 @@ from optim import get_optim, get_optim_id, add_optim_args
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default=None)
+parser.add_argument('--name', type=str, default=None)
 parser.add_argument('--new_epochs', type=int)
 parser.add_argument('--new_lr', type=float, default=None)
 parser.add_argument('--new_device', type=str, default=None)
@@ -49,15 +50,13 @@ with open(path_args, 'rb') as f:
 args.name = time.strftime("%Y-%m-%d_%H-%M-%S")
 args.resume = None
 args.epochs = more_args.new_epochs
+if more_args.name is not None: args.name = more_args.name
 if more_args.new_lr is not None: args.lr = more_args.new_lr
 if more_args.new_batch_size is not None: args.batch_size = more_args.new_batch_size
 if more_args.new_early_stop is not None: args.early_stop = more_args.new_early_stop
 if more_args.new_device is not None: args.device = more_args.new_device
 if more_args.new_num_workers is not None: args.num_workers = more_args.new_num_workers
-if more_args.new_amp is not None:
-    args.amp = more_args.new_amp
-    if more_args.new_amp:
-        args.parallel = None  # cannot run in parallel on AMP (yet)
+if more_args.new_amp is not None: args.amp = more_args.new_amp
 
 # Store more_args
 args.start_model = more_args.model
@@ -83,7 +82,7 @@ model_id = get_model_id(args)
 #######################
 
 optimizer, _, _ = get_optim(args, model)
-optim_id = f"more_{get_optim_id(args)}"
+optim_id = f"{get_optim_id(args)}"
 
 ##############
 ## Training ##
