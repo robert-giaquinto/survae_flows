@@ -131,6 +131,20 @@ def dataset_elbo_nats(model, data_loader, device, double=False, verbose=True):
     return nats / count
 
 
+def dataset_cond_elbo_nats(model, data_loader, device, double=False, verbose=True):
+    with torch.no_grad():
+        nats = 0.0
+        count = 0
+        for i, x in enumerate(data_loader):
+            if double: x = [x[0].double(), x[1].double()]
+            context = x[1].to(device)
+            x = x[0].to(device)
+            nats += cond_elbo_nats(model, x, context=context).cpu().item9) * len(x)
+            count += len(x)
+            if verbose: print('{}/{}'.format(i+1, len(data_loader)), nats/count, end='\r')
+    return nats / count
+
+
 def dataset_elbo_bpd(model, data_loader, device, double=False, verbose=True):
     with torch.no_grad():
         bpd = 0.0
@@ -139,6 +153,20 @@ def dataset_elbo_bpd(model, data_loader, device, double=False, verbose=True):
             if double: x = x.double()
             x = x.to(device)
             bpd += elbo_bpd(model, x).cpu().item() * len(x)
+            count += len(x)
+            if verbose: print('{}/{}'.format(i+1, len(data_loader)), bpd/count, end='\r')
+    return bpd / count
+
+
+def dataset_cond_elbo_bpd(model, data_loader, device, double=False, verbose=True):
+    with torch.no_grad():
+        bpd = 0.0
+        count = 0
+        for i, x in enumerate(data_loader):
+            if double: x = [x[0].double(), x[1].double()]
+            context = x[1].to(device)
+            x = x[0].to(device)
+            bpd += cond_elbo_bpd(model, x, context=context).cpu().item() * len(x)
             count += len(x)
             if verbose: print('{}/{}'.format(i+1, len(data_loader)), bpd/count, end='\r')
     return bpd / count
@@ -157,6 +185,20 @@ def dataset_iwbo_nats(model, data_loader, k, device, double=False, kbs=None, ver
     return nats / count
 
 
+def dataset_cond_iwbo_nats(model, data_loader, k, device, double=False, kbs=None, verbose=True):
+    with torch.no_grad():
+        nats = 0.0
+        count = 0
+        for i, x in enumerate(data_loader):
+            if double: x = [x[0].double(), x[1].double()]
+            context = x[1].to(device)
+            x = x[0].to(device)
+            nats += cond_iwbo_nats(model, x, context=context, k=k, kbs=kbs).cpu().item() * len(x)
+            count += len(x)
+            if verbose: print('{}/{}'.format(i+1, len(data_loader)), nats/count, end='\r')
+    return nats / count
+
+
 def dataset_iwbo_bpd(model, data_loader, k, device, double=False, kbs=None, verbose=True):
     with torch.no_grad():
         bpd = 0.0
@@ -165,6 +207,20 @@ def dataset_iwbo_bpd(model, data_loader, k, device, double=False, kbs=None, verb
             if double: x = x.double()
             x = x.to(device)
             bpd += iwbo_bpd(model, x, k=k, kbs=kbs).cpu().item() * len(x)
+            count += len(x)
+            if verbose: print('{}/{}'.format(i+1, len(data_loader)), bpd/count, end='\r')
+    return bpd / count
+
+
+def dataset_cond_iwbo_bpd(model, data_loader, k, device, double=False, kbs=None, verbose=True):
+    with torch.no_grad():
+        bpd = 0.0
+        count = 0
+        for i, x in enumerate(data_loader):
+            if double: x = [x[0].double(), x[1].double()]
+            context = x[1].to(device)
+            x = x[0].to(device)
+            bpd += cond_iwbo_bpd(model, x, context=context, k=k, kbs=kbs).cpu().item() * len(x)
             count += len(x)
             if verbose: print('{}/{}'.format(i+1, len(data_loader)), bpd/count, end='\r')
     return bpd / count
