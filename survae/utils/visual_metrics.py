@@ -10,10 +10,12 @@ import lpips
 
 def format_metrics(metrics):
     rval = f"Peak Signal Noise Ratio (PSNR): {metrics['psnr']:0.2f}\nStructural Similarity (SSIM): {metrics['ssim']:0.3f}\nLPIPS: {metrics['lpips']:0.3f}\n"
+    if 'lr_psnr' in metrics:
+        rval += f"LR-HR PSNR: {metrics['lr_psnr']:0.2f}\n"
     return rval
 
 
-def evaluate_perceptual_quality(model, data_loader, temperature, device):
+def evaluate_perceptual_quality(model, data_loader, temperature, device, sr_scale_factor=None):
     evaluate = PerceptualQuality(device=device)
     model.eval()
     with torch.no_grad():
@@ -22,16 +24,26 @@ def evaluate_perceptual_quality(model, data_loader, temperature, device):
             yhat = model.sample(x.to(device), temperature=temperature)
 
             # pass samples one image at a time
-            for yhat_i, y_i in zip(yhat, y):                
+            for x_i, yhat_i, y_i in zip(x, yhat, y):
                 metrics = evaluate.metrics(yhat_i, y_i)
+                if sr_scale_factor is not None:
+                    metrics['lr_psnr'] = evaluate.psnr(yhat_i[:, ::sr_scale_factor, ::sr_scale_factor], x_i)
                 results.append(metrics)
             
     psnr = np.mean([result['psnr'] for result in results])
     ssim = np.mean([result['ssim'] for result in results])
     lpips = np.mean([result['lpips'] for result in results])
-    metrics = {'psnr': psnr,
-               'ssim': ssim,
-               'lpips': lpips}
+    if sr_scale_factor is not None:
+        lr_psnr = np.mean([result['lr_psnr'] for result in results])
+        metrics = {'psnr': psnr,
+                   'ssim': ssim,
+                   'lpips': lpips,
+                   'lr_psnr': lr_psnr}
+    else:
+        metrics = {'psnr': psnr,
+                   'ssim': ssim,
+                   'lpips': lpips}
+
     return metrics
 
 

@@ -41,7 +41,7 @@ with open(path_args, 'rb') as f:
 ## Specify data ##
 ##################
 
-_, eval_loader, data_shape, cond_shape = get_data(args)
+eval_loader, data_shape, cond_shape = get_data(args, eval_only=True)
 
 ###################
 ## Specify model ##
@@ -55,7 +55,6 @@ checkpoint = torch.load(path_check)
 model.load_state_dict(checkpoint['model'])
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-#device = 'cpu'
 model = model.to(device)
 model = model.eval()
 print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoch'], args.epochs))
@@ -64,9 +63,9 @@ print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoc
 ## Evaluate ##
 ##############
 
-metrics = evaluate_perceptual_quality(model, eval_loader, temperature=eval_args.temperature, device=device)
+metrics = evaluate_perceptual_quality(model, eval_loader, temperature=eval_args.temperature, device=device, sr_scale_factor=args.sr_scale_factor)
 
-path_pc = f"{eval_args.model}/perceptual_quality/visual_metrics_ep{checkpoint['current_epoch'}_temp{int(100*eval_args.temperature)}_seed{eval_args.seed}.txt"
+path_pc = f"{eval_args.model}/perceptual_quality/visual_metrics_ep{checkpoint['current_epoch']}_temp{int(100*eval_args.temperature)}_seed{eval_args.seed}.txt"
 if not os.path.exists(os.path.dirname(path_pc)):
     os.mkdir(os.path.dirname(path_pc))
 

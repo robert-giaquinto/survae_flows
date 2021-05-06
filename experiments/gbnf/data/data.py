@@ -30,7 +30,7 @@ def get_data_id(args):
     return '{}_{}bit'.format(args.dataset, args.num_bits)
 
 
-def get_data(args):
+def get_data(args, eval_only=False):
     assert args.dataset in dataset_choices
 
     data_shape = get_data_shape(args.dataset)
@@ -73,10 +73,14 @@ def get_data(args):
         return
 
     pin = args.pin_memory and args.device == "cuda"
-    train_loader = dataset.get_data_loader(split="train", batch_size=args.batch_size, shuffle=True, pin_memory=pin, num_workers=args.num_workers)
-    test_loader = dataset.get_data_loader(split="test", batch_size=args.batch_size, shuffle=False, pin_memory=pin, num_workers=args.num_workers, worker_init_fn=_init_fn)
+    if eval_only:
+        test_loader = dataset.get_data_loader(split="test", batch_size=args.batch_size, shuffle=False, pin_memory=pin, num_workers=args.num_workers, worker_init_fn=_init_fn)
+        return test_loader, data_shape, cond_shape
+    else:
+        train_loader = dataset.get_data_loader(split="train", batch_size=args.batch_size, shuffle=True, pin_memory=pin, num_workers=args.num_workers)
+        test_loader = dataset.get_data_loader(split="test", batch_size=args.batch_size, shuffle=False, pin_memory=pin, num_workers=args.num_workers, worker_init_fn=_init_fn)
+        return train_loader, test_loader, data_shape, cond_shape
 
-    return train_loader, test_loader, data_shape, cond_shape
 
 
 def get_augmentation(augmentation, dataset, data_shape):

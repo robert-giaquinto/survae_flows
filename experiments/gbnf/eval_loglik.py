@@ -42,7 +42,7 @@ with open(path_args, 'rb') as f:
 ## Specify data ##
 ##################
 
-_, eval_loader, data_shape, cond_shape = get_data(args)
+eval_loader, data_shape, cond_shape = get_data(args, eval_only=True)
 
 # Adjust args
 args.batch_size = eval_args.batch_size

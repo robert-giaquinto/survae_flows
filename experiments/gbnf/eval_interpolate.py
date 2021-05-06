@@ -46,7 +46,7 @@ args.device = torch.device(device)
 ##################
 
 args.batch_size = 1
-_, eval_loader, data_shape, cond_shape = get_data(args)
+eval_loader, data_shape, cond_shape = get_data(args, eval_only=True)
 
 
 ###################

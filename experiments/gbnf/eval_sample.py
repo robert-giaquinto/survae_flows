@@ -36,13 +36,13 @@ torch.manual_seed(eval_args.seed)
 with open(path_args, 'rb') as f:
     args = pickle.load(f)
 
-args.batch_size = max(args.batch_size, eval_args.samples)
+args.batch_size = eval_args.samples
 
 ##################
 ## Specify data ##
 ##################
 
-_, eval_loader, data_shape, cond_shape = get_data(args)
+eval_loader, data_shape, cond_shape = get_data(args, eval_only=True)
 
 ###################
 ## Specify model ##
@@ -81,14 +81,20 @@ if not os.path.exists(out_dir): os.mkdir(out_dir)
 # save model samples
 batch = next(iter(eval_loader))
 if args.super_resolution:
-    imgs = batch[0][:eval_args.samples]
-    num_samples_or_context = batch[1][:eval_args.samples]
+    imgs = batch[0]  #[:eval_args.samples]
+    num_samples_or_context = batch[1]  #[:eval_args.samples]
     path_context = os.path.join(out_dir, f"context_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
     save_images(num_samples_or_context, path_context)
     num_samples_or_context = num_samples_or_context.to(device)
+
+    scale = args.sr_scale_factor
+    big_lr = torch.repeat_interleave(torch.repeat_interleave(batch[1], scale, dim=2), scale, dim=3)
+    path_big_lr = os.path.join(out_dir, f"big_lowres_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+    save_images(big_lr, path_big_lr)
+    
 else:
     num_samples_or_context = eval_args.samples
-    imgs = batch[:eval_args.samples]
+    imgs = batch  #[:eval_args.samples]
 
 if args.boosted_components > 1:
     for c in range(model.num_components):
