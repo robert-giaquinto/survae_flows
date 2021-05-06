@@ -55,6 +55,10 @@ checkpoint = torch.load(path_check)
 model.load_state_dict(checkpoint['model'])
 print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoch'], args.epochs))
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model = model.to(device)
+model = model.eval()
+
 ############
 ## Sample ##
 ############
@@ -68,12 +72,6 @@ def save_images(imgs, file_path, num_bits=args.num_bits, nrow=eval_args.nrow):
         out /= (2**num_bits - 1)
             
     vutils.save_image(out, file_path, nrow=nrow)
-    
-
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-device = 'cpu'
-model = model.to(device)
-model = model.eval()
 
 
 batch = next(iter(eval_loader))
