@@ -57,7 +57,6 @@ checkpoint = torch.load(path_check)
 model.load_state_dict(checkpoint['model'])
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-device = 'cpu'
 model = model.to(device)
 model = model.eval()
 print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoch'], args.epochs))
