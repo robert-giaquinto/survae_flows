@@ -66,7 +66,7 @@ print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoc
 
 metrics = evaluate_perceptual_quality(model, eval_loader, temperature=eval_args.temperature, device=device)
 
-path_pc = '{}/perceptual_quality/visual_metrics_ep{}_seed{}.txt'.format(eval_args.model, checkpoint['current_epoch'], eval_args.seed)
+path_pc = f"{eval_args.model}/perceptual_quality/visual_metrics_ep{checkpoint['current_epoch'}_temp{int(100*eval_args.temperature)}_seed{eval_args.seed}.txt"
 if not os.path.exists(os.path.dirname(path_pc)):
     os.mkdir(os.path.dirname(path_pc))
 
