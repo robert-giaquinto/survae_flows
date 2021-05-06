@@ -21,7 +21,7 @@ parser.add_argument('--model', type=str, default=None)
 parser.add_argument('--samples', type=int, default=64)
 parser.add_argument('--nrow', type=int, default=8)
 parser.add_argument('--seed', type=int, default=0)
-parser.add_argument('--temperature', type=float, default=None)
+parser.add_argument('--temperature', nargs="*", type=float, default=[1.0])
 eval_args = parser.parse_args()
 
 path_args = '{}/args.pickle'.format(eval_args.model)
@@ -71,42 +71,48 @@ def save_images(imgs, file_path, num_bits=args.num_bits, nrow=eval_args.nrow):
     
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = 'cpu'
 model = model.to(device)
 model = model.eval()
 
-out_dir = os.path.join(f"{eval_args.model}", f"samples/temperature{int(100 * eval_args.temperature)}/")
-if not os.path.exists(os.path.dirname(out_dir)): os.mkdir(os.path.dirname(out_dir))
-if not os.path.exists(out_dir): os.mkdir(out_dir)
 
-# save model samples
 batch = next(iter(eval_loader))
-if args.super_resolution:
-    imgs = batch[0]  #[:eval_args.samples]
-    num_samples_or_context = batch[1]  #[:eval_args.samples]
-    path_context = os.path.join(out_dir, f"context_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
-    save_images(num_samples_or_context, path_context)
-    num_samples_or_context = num_samples_or_context.to(device)
+assert len(eval_args.temperature) > 0
+for temperature in eval_args.temperature:
+    torch.manual_seed(eval_args.seed)
 
-    scale = args.sr_scale_factor
-    big_lr = torch.repeat_interleave(torch.repeat_interleave(batch[1], scale, dim=2), scale, dim=3)
-    path_big_lr = os.path.join(out_dir, f"big_lowres_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
-    save_images(big_lr, path_big_lr)
-    
-else:
-    num_samples_or_context = eval_args.samples
-    imgs = batch  #[:eval_args.samples]
+    out_dir = os.path.join(f"{eval_args.model}", f"samples/temperature{int(100 * temperature)}/")
+    if not os.path.exists(os.path.dirname(out_dir)): os.mkdir(os.path.dirname(out_dir))
+    if not os.path.exists(out_dir): os.mkdir(out_dir)
 
-if args.boosted_components > 1:
-    for c in range(model.num_components):
-        path_samples = os.path.join(out_dir, f"sample_e{checkpoint['current_epoch']}_c{c}_s{eval_args.seed}.png")
-        samples = model.sample(num_samples_or_context, component=c, temperature=eval_args.temperature)
-        save_images(samples, path_samples)
+    # save model samples
+    if args.super_resolution:
+        imgs = batch[0]  #[:eval_args.samples]
+        num_samples_or_context = batch[1]  #[:eval_args.samples]
+        path_context = os.path.join(out_dir, f"context_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+        save_images(num_samples_or_context, path_context)
+        num_samples_or_context = num_samples_or_context.to(device)
         
-else:
-    path_samples = os.path.join(out_dir, f"sample_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
-    samples = model.sample(num_samples_or_context, temperature=eval_args.temperature)
-    save_images(samples, path_samples)
+        scale = args.sr_scale_factor
+        big_lr = torch.repeat_interleave(torch.repeat_interleave(batch[1], scale, dim=2), scale, dim=3)
+        path_big_lr = os.path.join(out_dir, f"big_lowres_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+        save_images(big_lr, path_big_lr)
+    
+    else:
+        num_samples_or_context = eval_args.samples
+        imgs = batch  #[:eval_args.samples]
+
+    if args.boosted_components > 1:
+        for c in range(model.num_components):
+            path_samples = os.path.join(out_dir, f"sample_e{checkpoint['current_epoch']}_c{c}_s{eval_args.seed}.png")
+            samples = model.sample(num_samples_or_context, component=c, temperature=temperature)
+            save_images(samples, path_samples)
+        
+    else:
+        path_samples = os.path.join(out_dir, f"sample_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+        samples = model.sample(num_samples_or_context, temperature=temperature)
+        save_images(samples, path_samples)
                 
-# save real samples too
-path_true_samples = os.path.join(out_dir, f"true_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
-save_images(imgs, path_true_samples)
+    # save real samples too
+    path_true_samples = os.path.join(out_dir, f"true_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+    save_images(imgs, path_true_samples)
