@@ -9,7 +9,7 @@ from model.cond_gbnf import ConditionalGBNF
 def add_model_args(parser):
 
     # Model choice
-    parser.add_argument('--flow', type=str, default='none', choices=['vae', 'mvae', 'max', 'slice', 'none'])
+    parser.add_argument('--flow', type=str, default='bijective', choices=['vae', 'mvae', 'max', 'slice', 'none', 'bijective'])
     parser.add_argument('--base_distribution', type=str, default='n',
                         help="String representing the base distribution(s). 'n'=Normal, 'u'=Uniform, 'c'=ConvNorm")
 
@@ -21,7 +21,7 @@ def add_model_args(parser):
     parser.add_argument('--latent_size', type=int, default=196)
     parser.add_argument('--vae_hidden_units', nargs="*", type=int, default=[])
     parser.add_argument('--vae_activation', type=str, default='relu', choices=['relu', 'none' 'elu', 'gelu', 'swish'])
-    parser.add_argument('--compression_ratio', nargs="+", type=float, default=[0.5],
+    parser.add_argument('--compression_ratio', nargs="+", type=float, default=[0.0],
                         help="Percent reduction to latent space at each scale (except final). Only applies to mvae and slice flows.")
 
     # boosting parameters

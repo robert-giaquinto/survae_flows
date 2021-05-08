@@ -1,6 +1,6 @@
 import os
 from survae.data.datasets.image import UnsupervisedSVHNDataset, SupervisedSVHNDataset, SuperResolutionSVHNDataset
-from torchvision.transforms import Compose, ToTensor
+from torchvision.transforms import Compose, ToTensor, Resize
 from survae.data.transforms import Quantize
 from survae.data import TrainTestLoader, DATA_PATH
 
@@ -11,13 +11,17 @@ class SVHN(TrainTestLoader):
     https://research.google/pubs/pub37648/
     '''
 
-    def __init__(self, root=DATA_PATH, download=True, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
+    def __init__(self, root=DATA_PATH, download=True, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None):
 
         self.root = root
 
         # Define transformations
-        trans_train = pil_transforms + [ToTensor(), Quantize(num_bits)]
-        trans_test = [ToTensor(), Quantize(num_bits)]
+        trans = [ToTensor(), Quantize(num_bits)]
+        if resize_hw is not None:
+            trans.insert(0, Resize((resize_hw, resize_hw)))
+                         
+        trans_train = pil_transforms + trans
+        trans_test = trans
 
         # Load data
         sub_root = os.path.join(root, 'SVHN')

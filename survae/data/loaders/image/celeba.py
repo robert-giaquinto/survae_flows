@@ -14,7 +14,7 @@ class CelebA(TrainValidTestLoader):
     (Larsen et al. 2016): https://arxiv.org/abs/1512.09300
     (Dinh et al., 2017): https://arxiv.org/abs/1605.08803
     '''
-    def __init__(self, input_size, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
+    def __init__(self, input_size, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None):
         super(CelebA, self).__init__()
 
         assert len(input_size) == 3
@@ -23,8 +23,12 @@ class CelebA(TrainValidTestLoader):
         self.input_size = input_size
         self.y_classes = 40
 
-        trans_train = pil_transforms + [ToTensor(), Quantize(num_bits)]
-        trans_test = [ToTensor(), Quantize(num_bits)]
+        trans = [ToTensor(), Quantize(num_bits)]
+        if resize_hw is not None:
+            trans.insert(0, Resize((resize_hw, resize_hw)))
+                         
+        trans_train = pil_transforms + trans
+        trans_test = trans
 
         if conditional:
             raise ValueError(f"Conditional CelebA dataset not available yet.")

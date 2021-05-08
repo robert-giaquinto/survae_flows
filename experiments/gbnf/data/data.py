@@ -24,6 +24,7 @@ def add_data_args(parser):
     parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--pin_memory', type=eval, default=True)
     parser.add_argument('--augmentation', type=str, default=None)
+    parser.add_argument('--resize_hw', type=int, default=None)
 
 
 def get_data_id(args):
@@ -33,7 +34,13 @@ def get_data_id(args):
 def get_data(args, eval_only=False):
     assert args.dataset in dataset_choices
 
+    if hasattr(args, 'resize_hw') == False:
+        args.resize_hw = None
+        
     data_shape = get_data_shape(args.dataset)
+    if args.resize_hw is not None:
+        data_shape = (data_shape[0], args.resize_hw, args.resize_hw)
+        
     pil_transforms = get_augmentation(args.augmentation, args.dataset, data_shape)
 
     if args.super_resolution:
@@ -46,21 +53,21 @@ def get_data(args, eval_only=False):
     if args.dataset == 'binary_mnist':
         dataset = DynamicallyBinarizedMNIST()
     elif args.dataset == 'mnist':
-        dataset = MNIST(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
+        dataset = MNIST(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor, resize_hw=args.resize_hw)
     elif args.dataset == 'cifar10':
-        dataset = CIFAR10(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
+        dataset = CIFAR10(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor, resize_hw=args.resize_hw)
     elif args.dataset == 'imagenet32':
-        dataset = ImageNet32(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
+        dataset = ImageNet32(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor, resize_hw=args.resize_hw)
     elif args.dataset == 'imagenet64':
-        dataset = ImageNet64(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
+        dataset = ImageNet64(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor, resize_hw=args.resize_hw)
     elif args.dataset == 'svhn':
-        dataset = SVHN(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
+        dataset = SVHN(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor, resize_hw=args.resize_hw)
     elif args.dataset == 'celeba32':
-        dataset = CelebA32(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
+        dataset = CelebA32(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor, resize_hw=args.resize_hw)
     elif args.dataset == 'celeba64':
-        dataset = CelebA64(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
+        dataset = CelebA64(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor, resize_hw=args.resize_hw)
     elif args.dataset == 'celeba128':
-        dataset = CelebA128(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor)
+        dataset = CelebA128(num_bits=args.num_bits, pil_transforms=pil_transforms, conditional=args.conditional, super_resolution=args.super_resolution, sr_scale_factor=args.sr_scale_factor, resize_hw=args.resize_hw)
     else:
         raise ValueError(f"{dataset} is an unrecognized dataset.")
 
