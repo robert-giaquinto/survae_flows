@@ -1,6 +1,7 @@
 import torch
 from torchvision.datasets import SVHN
 from torchvision.transforms import Compose, ToTensor
+import torchvision.transforms.functional as F
 from survae.data import DATA_PATH
 
 
@@ -17,7 +18,6 @@ class SuperResolutionSVHNDataset(SVHN):
         assert isinstance(sr_scale_factor, int) and sr_scale_factor > 1
         self.sr_scale_factor = sr_scale_factor
 
-
     def __getitem__(self, index):
         """
         Args:
@@ -27,5 +27,13 @@ class SuperResolutionSVHNDataset(SVHN):
             tuple: (image, target) where target is index of the target class.
         """
         hr, _ = super(SuperResolutionSVHNDataset, self).__getitem__(index)
-        lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+
+        coin_flip = torch.randint(2, (1,)).item()
+        if coin_flip > 0:
+            lr = F.resize(hr, hr.shape[0] // self.sr_scale_factor)
+        else:
+            h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+            w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+            lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
+        
         return (hr, lr)

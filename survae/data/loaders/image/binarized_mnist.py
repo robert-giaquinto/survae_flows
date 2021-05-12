@@ -1,6 +1,6 @@
-from survae.data.datasets.image import UnsupervisedMNISTDataset, SupervisedMNISTDataset
-from torchvision.transforms import Compose, ToTensor #, ConvertImageDtype
+from survae.data.datasets.image import UnsupervisedMNISTDataset, SupervisedMNISTDataset, SuperResolutionMNISTDataset
 from survae.data.transforms import Flatten, DynamicBinarize
+from torchvision.transforms import Compose, ToTensor, Resize
 from survae.data import TrainTestLoader, DATA_PATH
 
 
@@ -16,18 +16,26 @@ class DynamicallyBinarizedMNIST(TrainTestLoader):
     for a remark on the different versions of MNIST.
     '''
 
-    def __init__(self, root=DATA_PATH, download=True, flatten=False, as_float=False, conditional=False, super_resolution=False):
+    def __init__(self, root=DATA_PATH, download=True, flatten=False, as_float=False, conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None):
 
         self.root = root
         self.y_classes = 10
+        self.sr_scale_factor = sr_scale_factor
+        
+        trans_train = pil_transforms + [ToTensor(), DynamicBinarize(as_float=as_float)]
+        trans_test = [ToTensor(), DynamicBinarize(as_float=as_float)]
+        if resize_hw is not None:
+            trans_train.insert(0, Resize((resize_hw, resize_hw)))
+            trans_test.insert(0, Resize((resize_hw, resize_hw)))
 
-        # Define transformations
-        trans = [ToTensor(), DynamicBinarize(as_float=as_float)]
-        #if as_float: trans.append(ConvertImageDtype(torch.float))
-        if flatten: trans.append(Flatten())
+        if flatten:
+            trans.append(Flatten())
 
         # Load data
-        if conditional:
+        if super_resolution:
+            self.train = SuperResolutionMNISTDataset(root, train=True, transform=Compose(trans_train), download=download, sr_scale_factor=sr_scale_factor)
+            self.test = SuperResolutionMNISTDataset(root, train=False, transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
+        elif conditional:
             self.train = SupervisedMNISTDataset(root, train=True, transform=Compose(trans), download=download)
             self.test = SupervisedMNISTDataset(root, train=False, transform=Compose(trans))
         else:

@@ -16,13 +16,11 @@ class MNIST(TrainTestLoader):
         self.y_classes = 10
         self.sr_scale_factor = sr_scale_factor
 
-        # Define transformations
-        trans = [ToTensor(), Quantize(num_bits)]
+        trans_train = pil_transforms + [ToTensor(), Quantize(num_bits)]
+        trans_test = [ToTensor(), Quantize(num_bits)]
         if resize_hw is not None:
-            trans.insert(0, Resize((resize_hw, resize_hw)))
-                         
-        trans_train = pil_transforms + trans
-        trans_test = trans
+            trans_train.insert(0, Resize((resize_hw, resize_hw)))
+            trans_test.insert(0, Resize((resize_hw, resize_hw)))
 
         # Load data
         if super_resolution:

@@ -28,7 +28,9 @@ class SuperResolutionMNISTDataset(MNIST):
             tuple: (high-resolution image, low-resolution image)
         """
         hr, _ = super(SuperResolutionMNISTDataset, self).__getitem__(index)
-        lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+        h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+        w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+        lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
         return (hr, lr)
 
     @property

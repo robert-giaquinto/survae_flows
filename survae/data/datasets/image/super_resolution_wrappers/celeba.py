@@ -41,13 +41,10 @@ class SuperResolutionCelebA32Dataset(UnsupervisedCelebA32Dataset):
         Returns:
             tensor: image
         """
-
-        hr = self.data[index]
-
-        if self.transform is not None:
-            hr = self.transform(hr)
-
-        lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+        hr = super(SuperResolutionCelebA32Dataset, self).__getitem__(index)
+        h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+        w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+        lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
         return (hr, lr)
 
     
@@ -78,13 +75,10 @@ class SuperResolutionCelebA64Dataset(UnsupervisedCelebA64Dataset):
         Returns:
             tensor: image
         """
-
-        hr = self.data[index]
-
-        if self.transform is not None:
-            hr = self.transform(hr)
-
-        lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+        hr = super(SuperResolutionCelebA64Dataset, self).__getitem__(index)
+        h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+        w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+        lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
         return (hr, lr)
 
 
@@ -115,11 +109,8 @@ class SuperResolutionCelebA128Dataset(UnsupervisedCelebA128Dataset):
         Returns:
             tensor: image
         """
-
-        hr = self.data[index]
-
-        if self.transform is not None:
-            hr = self.transform(hr)
-
-        lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+        hr = super(SuperResolutionCelebA128Dataset, self).__getitem__(index)
+        h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+        w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+        lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
         return (hr, lr)

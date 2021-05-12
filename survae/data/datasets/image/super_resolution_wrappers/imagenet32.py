@@ -34,7 +34,9 @@ class SuperResolutionImageNet32Dataset(UnsupervisedImageNet32Dataset):
             tuple: (image, target) where target is index of the target class.
         """
         hr = super(SuperResolutionImageNet32Dataset, self).__getitem__(index)
-        lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+        h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+        w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+        lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
         return (hr, lr)
 
 

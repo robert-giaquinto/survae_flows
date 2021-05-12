@@ -14,15 +14,15 @@ class SVHN(TrainTestLoader):
     def __init__(self, root=DATA_PATH, download=True, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None):
 
         self.root = root
+        self.sr_scale_factor = sr_scale_factor
 
         # Define transformations
-        trans = [ToTensor(), Quantize(num_bits)]
+        trans_train = pil_transforms + [ToTensor(), Quantize(num_bits)]
+        trans_test = [ToTensor(), Quantize(num_bits)]
         if resize_hw is not None:
-            trans.insert(0, Resize((resize_hw, resize_hw)))
+            trans_train.insert(0, Resize((resize_hw, resize_hw)))
+            trans_test.insert(0, Resize((resize_hw, resize_hw)))
                          
-        trans_train = pil_transforms + trans
-        trans_test = trans
-
         # Load data
         sub_root = os.path.join(root, 'SVHN')
 

@@ -27,5 +27,7 @@ class SuperResolutionCIFAR10Dataset(CIFAR10):
             tuple: (image, target) where target is index of the target class.
         """
         hr, _ = super(SuperResolutionCIFAR10Dataset, self).__getitem__(index)
-        lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+        h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+        w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+        lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
         return (hr, lr)
