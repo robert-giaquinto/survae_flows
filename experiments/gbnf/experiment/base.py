@@ -147,10 +147,6 @@ class BaseExperiment(object):
         if device is not None:
             device = torch.device(device)
             checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'), map_location=device)
-
-            #if self.args.parallel == "dp" and checkpoint['model'].keys()[0] == 'module.':
-                
-            
         else:
             checkpoint = torch.load(os.path.join(check_path, 'checkpoint.pt'))
 

@@ -100,33 +100,33 @@ else:
             batch = next(iter(eval_loader))            
             imgs = batch[0]
             context = batch[1]
-            path_context = os.path.join(f"{eval_args.model}", f"interpolation/batch{batch_id}/context_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+            path_context = os.path.join(f"{eval_args.model}", f"interpolation/seed{eval_args.seed}/context_e{checkpoint['current_epoch']}_batch{batch_id:02d}.png")
             save_images(context, path_context)
 
             if args.boosted_components > 1:
                 for c in range(model.num_components):
-                    path_samples = os.path.join(f"{eval_args.model}", f"interpolation/batch{batch_id}/sample_e{checkpoint['current_epoch']}_c{c}_s{eval_args.seed}.png")
+                    path_samples = os.path.join(f"{eval_args.model}", f"interpolation/seed{eval_args.seed}/sample_e{checkpoint['current_epoch']}_c{c}_batch{batch_id:02d}.png")
                     samples = model.interpolate(num_samples=eval_args.num_samples, context=context.to(device), component=c, x=imgs.to(device))
                     save_images(samples, path_samples)
         
             else:
-                path_samples = os.path.join(f"{eval_args.model}", f"interpolation/batch{batch_id}/sample_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+                path_samples = os.path.join(f"{eval_args.model}", f"interpolation/seed{eval_args.seed}/sample_e{checkpoint['current_epoch']}_batch{batch_id:02d}.png")
                 samples = model.interpolate(num_samples=eval_args.num_samples, context=context.to(device), x=imgs.to(device))
                 save_images(samples, path_samples)
 
             # save real samples too
-            path_true_samples = os.path.join(f"{eval_args.model}", f"interpolation/batch{batch_id}/true_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+            path_true_samples = os.path.join(f"{eval_args.model}", f"interpolation/seed{eval_args.seed}/true_e{checkpoint['current_epoch']}_batch{batch_id:02d}.png")
             save_images(imgs, path_true_samples)
             
         else:
             if args.boosted_components > 1:
                 for c in range(model.num_components):
-                    path_samples = os.path.join(f"{eval_args.model}", f"interpolation/batch{batch_id}/sample_e{checkpoint['current_epoch']}_c{c}_s{eval_args.seed}.png")
+                    path_samples = os.path.join(f"{eval_args.model}", f"interpolation/seed{eval_args.seed}/sample_e{checkpoint['current_epoch']}_c{c}_batch{batch_id:02d}.png")
                     samples = model.interpolate(num_samples=eval_args.num_samples, component=c)
                     save_images(samples, path_samples)
         
             else:
-                path_samples = os.path.join(f"{eval_args.model}", f"interpolation/batch{batch_id}/sample_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+                path_samples = os.path.join(f"{eval_args.model}", f"interpolation/seed{eval_args.seed}/sample_e{checkpoint['current_epoch']}_batch{batch_id:02d}.png")
                 samples = model.interpolate(num_samples=eval_args.num_samples)
                 save_images(samples, path_samples)
 

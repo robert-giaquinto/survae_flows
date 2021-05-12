@@ -48,16 +48,16 @@ eval_loader, data_shape, cond_shape = get_data(args, eval_only=True)
 ## Specify model ##
 ###################
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 model = get_model(args, data_shape=data_shape, cond_shape=cond_shape)
 if args.parallel == 'dp':
     model = DataParallelDistribution(model)
-checkpoint = torch.load(path_check)
+checkpoint = torch.load(path_check, map_location=torch.device(device))
 model.load_state_dict(checkpoint['model'])
-print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoch'], args.epochs))
-
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model = model.to(device)
 model = model.eval()
+print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoch'], args.epochs))
 
 ############
 ## Sample ##
@@ -79,7 +79,7 @@ assert len(eval_args.temperature) > 0
 for temperature in eval_args.temperature:
     torch.manual_seed(eval_args.seed)
 
-    out_dir = os.path.join(f"{eval_args.model}", f"samples/temperature{int(100 * temperature)}/")
+    out_dir = os.path.join(f"{eval_args.model}", f"samples/seed{eval_args.seed}/")
     if not os.path.exists(os.path.dirname(out_dir)): os.mkdir(os.path.dirname(out_dir))
     if not os.path.exists(out_dir): os.mkdir(out_dir)
 
@@ -87,13 +87,13 @@ for temperature in eval_args.temperature:
     if args.super_resolution:
         imgs = batch[0]  #[:eval_args.samples]
         num_samples_or_context = batch[1]  #[:eval_args.samples]
-        path_context = os.path.join(out_dir, f"context_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+        path_context = os.path.join(out_dir, f"context_e{checkpoint['current_epoch']}_temperature{int(100 * temperature)}.png")
         save_images(num_samples_or_context, path_context)
         num_samples_or_context = num_samples_or_context.to(device)
         
         scale = args.sr_scale_factor
         big_lr = torch.repeat_interleave(torch.repeat_interleave(batch[1], scale, dim=2), scale, dim=3)
-        path_big_lr = os.path.join(out_dir, f"big_lowres_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+        path_big_lr = os.path.join(out_dir, f"big_lowres_e{checkpoint['current_epoch']}_temperature{int(100 * temperature)}.png")
         save_images(big_lr, path_big_lr)
     
     else:
@@ -102,15 +102,15 @@ for temperature in eval_args.temperature:
 
     if args.boosted_components > 1:
         for c in range(model.num_components):
-            path_samples = os.path.join(out_dir, f"sample_e{checkpoint['current_epoch']}_c{c}_s{eval_args.seed}.png")
+            path_samples = os.path.join(out_dir, f"sample_e{checkpoint['current_epoch']}_c{c}_temperature{int(100 * temperature)}.png")
             samples = model.sample(num_samples_or_context, component=c, temperature=temperature)
             save_images(samples, path_samples)
         
     else:
-        path_samples = os.path.join(out_dir, f"sample_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+        path_samples = os.path.join(out_dir, f"sample_e{checkpoint['current_epoch']}_temperature{int(100 * temperature)}.png")
         samples = model.sample(num_samples_or_context, temperature=temperature)
         save_images(samples, path_samples)
                 
     # save real samples too
-    path_true_samples = os.path.join(out_dir, f"true_e{checkpoint['current_epoch']}_s{eval_args.seed}.png")
+    path_true_samples = os.path.join(out_dir, f"true_e{checkpoint['current_epoch']}_temperature{int(100 * temperature)}.png")
     save_images(imgs, path_true_samples)

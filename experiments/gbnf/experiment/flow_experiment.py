@@ -152,6 +152,7 @@ class FlowExperiment(BaseExperiment):
 
     def resume(self):
         resume_path = os.path.join(self.log_base, self.data_id, self.model_id, self.arch_id, self.optim_id, self.seed_id, self.args.resume, 'check')
+        #self.checkpoint_load(resume_path, device=self.args.device)
         self.checkpoint_load(resume_path)
         for epoch in range(self.current_epoch):
             
@@ -190,7 +191,7 @@ class FlowExperiment(BaseExperiment):
         self.model.train()
         loss_sum = 0.0
         loss_count = 0
-        print_every = max(1, (len(self.train_loader.dataset) // self.args.batch_size) // 10)
+        print_every = max(1, (len(self.train_loader.dataset) // self.args.batch_size) // 20)
         for i, x in enumerate(self.train_loader):
 
             # Cast operations to mixed precision
@@ -236,7 +237,7 @@ class FlowExperiment(BaseExperiment):
         self.model.train()
         loss_sum = 0.0
         loss_count = 0
-        print_every = max(1, (len(self.train_loader.dataset) // self.args.batch_size) // 10)
+        print_every = max(1, (len(self.train_loader.dataset) // self.args.batch_size) // 20)
         for i, x in enumerate(self.train_loader):
             self.optimizer.zero_grad()
 

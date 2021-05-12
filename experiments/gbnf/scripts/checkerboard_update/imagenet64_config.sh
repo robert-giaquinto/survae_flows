@@ -11,7 +11,7 @@ eval_every=1
 check_every=1
 
 dataset=imagenet64
-num_bits=5
+num_bits=8
 augmentation=eta
 
 num_scales=3
@@ -27,7 +27,7 @@ coupling_dropout=0.0
 coupling_mixtures=4
 
 conditional_channels=""
-lowres_upsampler_channels="32 32 64 64"
+lowres_upsampler_channels="64 128"
 lowres_encoder_channels=64
 lowres_encoder_blocks=2
 lowres_encoder_depth=4

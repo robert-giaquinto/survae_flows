@@ -1,6 +1,6 @@
 #!/bin/bash -l        
 #SBATCH --time=24:00:00
-#SBATCH --ntasks=6
+#SBATCH --ntasks=8
 #SBATCH --mem=128g
 #SBATCH --mail-type=ALL  
 #SBATCH --mail-user=smit7982@umn.edu 
@@ -26,7 +26,7 @@ cat ~/super_resolution/survae_flows/experiments/gbnf/scripts/checkerboard_update
 device=cuda
 amp=True
 parallel=dp
-num_workers=4
+num_workers=6
 
 seed=SEED
 batch_size=BATCHSIZE

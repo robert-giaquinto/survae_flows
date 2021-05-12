@@ -83,26 +83,30 @@ def init_model(args, data_shape, cond_shape=None):
                                           coupling_gated_conv=args.coupling_gated_conv,
                                           coupling_mixtures=args.coupling_mixtures)
         
-    elif args.flow in ["max", "slice", "none"]:
-        
+    elif args.flow in ["max", "slice", "none", "bijective"]:        
         model = PoolFlow(data_shape=data_shape,
                          num_bits=args.num_bits,
                          num_scales=args.num_scales,
                          num_steps=args.num_steps,
                          actnorm=args.actnorm,
                          pooling=args.flow,
-                         sliced_ratio=args.compression_ratio,
+                         compression_ratio=args.compression_ratio,
                          dequant=args.dequant,
                          dequant_steps=args.dequant_steps,
                          dequant_context=args.dequant_context,
+                         dequant_blocks=args.dequant_blocks,
                          coupling_network=args.coupling_network,
                          coupling_blocks=args.coupling_blocks,
                          coupling_channels=args.coupling_channels,
                          coupling_depth=args.coupling_depth,
                          coupling_dropout=args.coupling_dropout,
                          coupling_gated_conv=args.coupling_gated_conv,
-                         coupling_mixtures=args.coupling_mixtures)
-
+                         coupling_mixtures=args.coupling_mixtures,
+                         augment_size=args.augment_size,
+                         augment_steps=args.augment_steps,
+                         augment_context=args.augment_context,
+                         augment_blocks=args.augment_blocks,
+                         checkerboard_scales=args.checkerboard_scales)
     else:
         raise ValueError(f"No model defined for {args.flow} flows")
 
