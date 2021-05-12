@@ -21,7 +21,6 @@ class PerceptualQuality():
             return {
                 'psnr':  float(self.psnr(imgA, imgB)),
                 'lpips': float(self.lpips(imgA, imgB)),
-                'lpips': float(0.0),
                 'ssim':  float(self.ssim(imgA, imgB))
             }
         else:
@@ -30,6 +29,14 @@ class PerceptualQuality():
     def lpips(self, imgA, imgB):
         tA = imgA.to(self.device)
         tB = imgB.to(self.device)
+        if tA.max().item() > 1.0:
+            tA = tA / tA.max().item()
+            tB = tB / tB.max().item()
+
+        if tA.min().item() == 0.0:
+            tA = (tA * 2.0) - 1.0
+            tB = (tB * 2.0) - 1.0
+
         dist01 = self.lpips_model.forward(tA, tB).item()
         return dist01
 
@@ -50,16 +57,15 @@ class PerceptualQuality():
         #if imgA.max().item() > 1.0:
         imgA = imgA.cpu().numpy() #/ 255.0
         imgB = imgB.cpu().numpy() #/ 255.0
-            
-        #return -10.0 * np.log(np.mean(np.square(imgA - imgB))) / np.log(10.0)
         return 20 * np.log10(255.0) - 10.0 * np.log10(np.mean(np.square(imgA - imgB)))
 
     @staticmethod
     def format_metrics(metrics):
-        rval = f"Peak Signal Noise Ratio (PSNR): {metrics['psnr']:0.2f}\nStructural Similarity (SSIM): {metrics['ssim']:0.3f}\nLPIPS: {metrics['lpips']:0.3f}\n"
+        rval =  f"Peak Signal Noise Ratio (PSNR): {metrics['psnr']:0.2f}\n"
+        rval += f"Structural Similarity (SSIM): {metrics['ssim']:0.3f}\n"
+        rval += f"LPIPS: {metrics['lpips']:0.3f}\n"
         if 'lr_psnr' in metrics:
             rval += f"LR-HR PSNR: {metrics['lr_psnr']:0.2f}\n"
-        
         return rval
     
     def evaluate(self, model, data_loader, temperature, sr_scale_factor=None):

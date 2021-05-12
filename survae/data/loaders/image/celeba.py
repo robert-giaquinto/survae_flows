@@ -65,21 +65,21 @@ class CelebA(TrainValidTestLoader):
 
 
 class CelebA32(CelebA):
-    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
+    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None):
         super(CelebA32, self).__init__(input_size=[3,32,32], root=root,
                                        num_bits=num_bits, pil_transforms=pil_transforms,
-                                       conditional=conditional, super_resolution=super_resolution, sr_scale_factor=sr_scale_factor)
+                                       conditional=conditional, super_resolution=super_resolution, sr_scale_factor=sr_scale_factor, resize_hw=resize_hw)
 
 class CelebA64(CelebA):
-    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
+    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None):
         super(CelebA64, self).__init__(input_size=[3,64,64], root=root,
                                        num_bits=num_bits, pil_transforms=pil_transforms,
-                                       conditional=conditional, super_resolution=super_resolution, sr_scale_factor=sr_scale_factor)
+                                       conditional=conditional, super_resolution=super_resolution, sr_scale_factor=sr_scale_factor, resize_hw=resize_hw)
 
 class CelebA128(CelebA):
-    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4):
+    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None):
         super(CelebA128, self).__init__(input_size=[3,128,128], root=root,
                                        num_bits=num_bits, pil_transforms=pil_transforms,
-                                       conditional=conditional, super_resolution=super_resolution, sr_scale_factor=sr_scale_factor)
+                                       conditional=conditional, super_resolution=super_resolution, sr_scale_factor=sr_scale_factor, resize_hw=resize_hw)
 
 
