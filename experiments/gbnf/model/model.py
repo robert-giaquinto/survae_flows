@@ -98,7 +98,7 @@ def get_model_id(args):
     return model_id #+ "_" + arch
 
 
-def get_model(args, data_shape, cond_shape=None):
+def get_model(args, data_shape, cond_shape=None, legacy=False):
 
     if args.boosted_components > 1:
         if args.super_resolution or args.conditional:
@@ -106,6 +106,6 @@ def get_model(args, data_shape, cond_shape=None):
         else:
             model = GBNF(data_shape=data_shape, num_bits=args.num_bits, args=args)
     else:
-        model = init_model(args=args, data_shape=data_shape, cond_shape=cond_shape)
+        model = init_model(args=args, data_shape=data_shape, cond_shape=cond_shape, legacy=legacy)
 
     return model

@@ -9,3 +9,5 @@ from .imagenet64 import ImageNet64
 from .celeba import CelebA, CelebA32, CelebA64, CelebA128
 from .svhn import SVHN
 from .mnist import MNIST
+from .set5 import Set5
+from .set14 import Set14

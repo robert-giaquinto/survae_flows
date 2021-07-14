@@ -241,7 +241,7 @@ class StudentExperiment(BaseExperiment):
         
         return {'nll': loss_sum/loss_count}
 
-    def eval_fn(self, epoch):
+    def eval_fn(self):
         self.model.eval()
         self.teacher.eval()
         with torch.no_grad():
@@ -255,7 +255,7 @@ class StudentExperiment(BaseExperiment):
                 loss_sum += loss.detach().cpu().item() * self.args.batch_size
                 loss_count += self.args.batch_size
                 print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, NLL: {:.3f}'.format(
-                    epoch+1, self.args.epochs, loss_count, self.args.test_samples, loss_sum/loss_count), end='\r')
+                    self.current_epoch+1, self.args.epochs, loss_count, self.args.test_samples, loss_sum/loss_count), end='\r')
             print('')
         return {'nll': loss_sum/loss_count}
 

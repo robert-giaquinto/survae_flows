@@ -3,7 +3,7 @@ import math
 import torch
 import pickle
 import argparse
-import torchvision.utils as vutils
+import numpy as np
 
 # Data
 from data.data import get_data, get_data_id, add_data_args
@@ -12,28 +12,23 @@ from data.data import get_data, get_data_id, add_data_args
 from model.model import get_model, get_model_id, add_model_args
 from survae.distributions import DataParallelDistribution
 
-from survae.utils import PerceptualQuality
-
-
 ###########
 ## Setup ##
 ###########
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default=None)
-parser.add_argument('--dataset', type=str, default=None)
 parser.add_argument('--seed', type=int, default=0)
-parser.add_argument('--temperature', nargs="*", type=float, default=[1.0])
-parser.add_argument('--resize_hw', type=int, default=None)
 
 # set5 and set14 params
-parser.add_argument('--repeats', type=int, default=1)
+parser.add_argument('--dataset', type=str, default=None)
+parser.add_argument('--resize_hw', type=int, default=None)
+parser.add_argument('--repeats', type=int, default=1, help="How many times the set5 or set14 dataset is repeated by the loader")
 parser.add_argument('--bicubic_lr', type=eval, default=False)
 parser.add_argument('--crop', type=str, default=None, choices=[None, 'random', 'center'])
 
-eval_args = parser.parse_args()
 
-assert len(eval_args.temperature) > 0
+eval_args = parser.parse_args()
 
 path_args = '{}/args.pickle'.format(eval_args.model)
 path_check = '{}/check/checkpoint.pt'.format(eval_args.model)
@@ -76,33 +71,26 @@ model = model.to(device)
 model = model.eval()
 print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoch'], args.epochs))
 
-##############
-## Evaluate ##
-##############
+############
+## Sample ##
+############
 
-pq = PerceptualQuality(device=device, num_bits=args.num_bits, sr_scale_factor=args.sr_scale_factor)
+base_dir = os.path.join(f"{eval_args.model}", f"likelihoods/")
+if not os.path.exists(base_dir): os.mkdir(base_dir)
 
-dataset_label = "" if eval_args.dataset is None else f"_{eval_args.dataset}"
-for interpolation_method in ['nearest', 'bicubic']:
-    metrics = pq.evaluate(model=interpolation_method, data_loader=eval_loader, temperature=None)
-    print(pq.format_metrics(metrics))
-    path_pc = f"{eval_args.model}/perceptual_quality/visual_metrics_{interpolation_method}_seed{eval_args.seed}{dataset_label}.txt"
-    if not os.path.exists(os.path.dirname(path_pc)):
-        os.mkdir(os.path.dirname(path_pc))
-
-    with open(path_pc, 'w') as f:
-        f.write(pq.format_metrics(metrics))
-
-
-for temperature in eval_args.temperature:
-    torch.manual_seed(eval_args.seed)
-    metrics = pq.evaluate(model=model, data_loader=eval_loader, temperature=temperature)
-    #print(f"Temperature: {temperature}")
-    print(pq.format_metrics(metrics))
+lhoods = []
+if args.super_resolution:
+    for y, x in eval_loader:
+        with torch.no_grad():
+            lhood = model.log_prob(y.to(device), x.to(device))
+            lhoods.append(lhood)
+else:
+    for x in eval_loader:
+        with torch.no_grad():
+            lhood = model.log_prob(x.to(device))
+            lhoods.append(lhood)
     
-    path_pc = f"{eval_args.model}/perceptual_quality/visual_metrics_ep{checkpoint['current_epoch']}_temp{int(100*temperature)}_seed{eval_args.seed}{dataset_label}.txt"
-    if not os.path.exists(os.path.dirname(path_pc)):
-        os.mkdir(os.path.dirname(path_pc))
 
-    with open(path_pc, 'w') as f:
-        f.write(pq.format_metrics(metrics))
+lhoods = torch.cat(lhoods, dim=0).cpu().data.numpy()
+print(f"Likelihoods shape: {lhoods.shape}")
+np.savetxt(os.path.join(base_dir, f"likelihoods_{args.dataset}_seed{eval_args.seed}.txt"), lhoods, delimiter=',', fmt='%10.5f')

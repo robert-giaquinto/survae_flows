@@ -7,8 +7,10 @@ import errno
 import zipfile
 import io
 from PIL import Image
+import torchvision
 from torchvision.transforms.functional import crop, resize
 from torchvision.transforms import Compose, ToTensor
+from torchvision.transforms.functional import resize
 
 from survae.data import DATA_PATH
 from survae.data.datasets.image.unsupervised_wrappers.celeba import UnsupervisedCelebA32Dataset, UnsupervisedCelebA64Dataset, UnsupervisedCelebA128Dataset
@@ -24,7 +26,7 @@ class SuperResolutionCelebA32Dataset(UnsupervisedCelebA32Dataset):
     raw_folder = 'celeba/raw'
     processed_folder = 'celeba/processed32'
 
-    def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4):
+    def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4, bicubic=False):
 
         if transform is None:
             transform = Compose([ToTensor()])
@@ -33,6 +35,7 @@ class SuperResolutionCelebA32Dataset(UnsupervisedCelebA32Dataset):
 
         assert isinstance(sr_scale_factor, int) and sr_scale_factor > 1
         self.sr_scale_factor = sr_scale_factor
+        self.bicubic = bicubic
 
     def __getitem__(self, index):
         """
@@ -42,9 +45,14 @@ class SuperResolutionCelebA32Dataset(UnsupervisedCelebA32Dataset):
             tensor: image
         """
         hr = super(SuperResolutionCelebA32Dataset, self).__getitem__(index)
-        h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
-        w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
-        lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
+        if self.bicubic:
+            lr = resize(hr, hr.shape[1] // self.sr_scale_factor, interpolation=torchvision.transforms.InterpolationMode.BICUBIC)
+        else:
+            # h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+            # w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+            # lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
+            lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+
         return (hr, lr)
 
     
@@ -58,7 +66,7 @@ class SuperResolutionCelebA64Dataset(UnsupervisedCelebA64Dataset):
     raw_folder = 'celeba/raw'
     processed_folder = 'celeba/processed64'
 
-    def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4):
+    def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4, bicubic=False):
 
         if transform is None:
             transform = Compose([ToTensor()])
@@ -67,6 +75,7 @@ class SuperResolutionCelebA64Dataset(UnsupervisedCelebA64Dataset):
 
         assert isinstance(sr_scale_factor, int) and sr_scale_factor > 1
         self.sr_scale_factor = sr_scale_factor
+        self.bicubic = bicubic
 
     def __getitem__(self, index):
         """
@@ -76,9 +85,14 @@ class SuperResolutionCelebA64Dataset(UnsupervisedCelebA64Dataset):
             tensor: image
         """
         hr = super(SuperResolutionCelebA64Dataset, self).__getitem__(index)
-        h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
-        w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
-        lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
+        if self.bicubic:
+            lr = resize(hr, hr.shape[1] // self.sr_scale_factor, interpolation=torchvision.transforms.InterpolationMode.BICUBIC)
+        else:
+            # h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+            # w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+            # lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
+            lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
+
         return (hr, lr)
 
 
@@ -92,7 +106,7 @@ class SuperResolutionCelebA128Dataset(UnsupervisedCelebA128Dataset):
     raw_folder = 'celeba/raw'
     processed_folder = 'celeba/processed128'
 
-    def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4):
+    def __init__(self, root=DATA_PATH, split='train', transform=None, sr_scale_factor=4, bicubic=False):
 
         if transform is None:
             transform = Compose([ToTensor()])
@@ -101,6 +115,7 @@ class SuperResolutionCelebA128Dataset(UnsupervisedCelebA128Dataset):
 
         assert isinstance(sr_scale_factor, int) and sr_scale_factor > 1
         self.sr_scale_factor = sr_scale_factor
+        self.bicubic = bicubic
 
     def __getitem__(self, index):
         """
@@ -110,7 +125,11 @@ class SuperResolutionCelebA128Dataset(UnsupervisedCelebA128Dataset):
             tensor: image
         """
         hr = super(SuperResolutionCelebA128Dataset, self).__getitem__(index)
-        h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
-        w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
-        lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
+        if self.bicubic:
+            lr = resize(hr, hr.shape[1] // self.sr_scale_factor, interpolation=torchvision.transforms.InterpolationMode.BICUBIC)
+        else:
+            # h_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+            # w_offset = torch.randint(self.sr_scale_factor, (1,)).item()
+            # lr = hr[:, h_offset::self.sr_scale_factor, w_offset::self.sr_scale_factor]
+            lr = hr[:, ::self.sr_scale_factor, ::self.sr_scale_factor]
         return (hr, lr)

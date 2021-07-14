@@ -14,7 +14,7 @@ class CelebA(TrainValidTestLoader):
     (Larsen et al. 2016): https://arxiv.org/abs/1512.09300
     (Dinh et al., 2017): https://arxiv.org/abs/1605.08803
     '''
-    def __init__(self, input_size, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None):
+    def __init__(self, input_size, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None, bicubic=False):
         super(CelebA, self).__init__()
 
         assert len(input_size) == 3
@@ -35,7 +35,7 @@ class CelebA(TrainValidTestLoader):
         # Load data
         if super_resolution:
             if input_size[-1] == 32:
-                Dataset = SuperResolutionCelebA32Dataset
+                Dataset = SuperResolutionCelebA32Dataset                
             elif input_size[-1] == 64:
                 Dataset = SuperResolutionCelebA64Dataset
             elif input_size[-1] == 128:
@@ -43,9 +43,9 @@ class CelebA(TrainValidTestLoader):
             else:
                 raise ValueError(f"Invalid input size {input_size}")
 
-            self.train = Dataset(root, split='train', transform=Compose(trans_train), sr_scale_factor=sr_scale_factor)
-            self.valid = Dataset(root, split='valid', transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
-            self.test = Dataset(root, split='test', transform=Compose(trans_test), sr_scale_factor=sr_scale_factor)
+            self.train = Dataset(root, split='train', transform=Compose(trans_train), sr_scale_factor=sr_scale_factor, bicubic=bicubic)
+            self.valid = Dataset(root, split='valid', transform=Compose(trans_test), sr_scale_factor=sr_scale_factor, bicubic=bicubic)
+            self.test = Dataset(root, split='test', transform=Compose(trans_test), sr_scale_factor=sr_scale_factor, bicubic=bicubic)
             
         else:
             if input_size[-1] == 32:
@@ -64,21 +64,33 @@ class CelebA(TrainValidTestLoader):
 
 
 class CelebA32(CelebA):
-    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None):
-        super(CelebA32, self).__init__(input_size=[3,32,32], root=root,
-                                       num_bits=num_bits, pil_transforms=pil_transforms,
-                                       conditional=conditional, super_resolution=super_resolution, sr_scale_factor=sr_scale_factor, resize_hw=resize_hw)
+    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None, bicubic=False):
+        super(CelebA32, self).__init__(input_size=[3,32,32],
+                                       root=root,
+                                       num_bits=num_bits,
+                                       pil_transforms=pil_transforms,
+                                       conditional=conditional,
+                                       super_resolution=super_resolution, sr_scale_factor=sr_scale_factor, bicubic=bicubic,
+                                       resize_hw=resize_hw)
 
 class CelebA64(CelebA):
-    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None):
-        super(CelebA64, self).__init__(input_size=[3,64,64], root=root,
-                                       num_bits=num_bits, pil_transforms=pil_transforms,
-                                       conditional=conditional, super_resolution=super_resolution, sr_scale_factor=sr_scale_factor, resize_hw=resize_hw)
+    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None, bicubic=False):
+        super(CelebA64, self).__init__(input_size=[3,64,64],
+                                       root=root,
+                                       num_bits=num_bits,
+                                       pil_transforms=pil_transforms,
+                                       conditional=conditional,
+                                       super_resolution=super_resolution, sr_scale_factor=sr_scale_factor,bicubic=bicubic,
+                                       resize_hw=resize_hw)
 
 class CelebA128(CelebA):
-    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None):
-        super(CelebA128, self).__init__(input_size=[3,128,128], root=root,
-                                       num_bits=num_bits, pil_transforms=pil_transforms,
-                                       conditional=conditional, super_resolution=super_resolution, sr_scale_factor=sr_scale_factor, resize_hw=resize_hw)
+    def __init__(self, root=DATA_PATH, num_bits=8, pil_transforms=[], conditional=False, super_resolution=False, sr_scale_factor=4, resize_hw=None, bicubic=False):
+        super(CelebA128, self).__init__(input_size=[3,128,128],
+                                        root=root,
+                                        num_bits=num_bits,
+                                        pil_transforms=pil_transforms,
+                                        conditional=conditional,
+                                        super_resolution=super_resolution, sr_scale_factor=sr_scale_factor, bicubic=bicubic,
+                                        resize_hw=resize_hw)
 
 

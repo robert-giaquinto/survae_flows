@@ -58,35 +58,11 @@ checkpoint = torch.load(path_check)
 model.load_state_dict(checkpoint['model'])
 print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoch'], args.epochs))
 
-############
-## Loglik ##
-############
+# Load checkpoint
+exp.checkpoint_load('{}/check/'.format(more_args.model), device=more_args.new_device)
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-model = model.to(device)
-model = model.eval()
-if eval_args.double: model = model.double()
+# modify model
+if more_args.new_device is not None:
+    exp.model.to(torch.device(more_args.new_device))
 
-if eval_args.k is None:
-    eval_str = 'elbo'
-
-    if args.super_resolution or args.conditional:
-        bpd = dataset_cond_elbo_bpd(model, eval_loader, device=device, double=eval_args.double)
-    else:
-        bpd = dataset_elbo_bpd(model, eval_loader, device=device, double=eval_args.double)
-
-else:
-    eval_str = 'iwbo{}'.format(eval_args.k)
-    if args.super_resolution or args.conditional:
-        bpd = dataset_cond_iwbo_bpd(model, eval_loader, k=eval_args.k, kbs=eval_args.kbs, device=device, double=eval_args.double)
-    else:
-        bpd = dataset_iwbo_bpd(model, eval_loader, k=eval_args.k, kbs=eval_args.kbs, device=device, double=eval_args.double)
-
-
-
-path_loglik = '{}/loglik/{}_ep{}.txt'.format(eval_args.model, eval_str, checkpoint['current_epoch'])
-if not os.path.exists(os.path.dirname(path_loglik)):
-    os.mkdir(os.path.dirname(path_loglik))
-
-with open(path_loglik, 'w') as f:
-    f.write(str(bpd))
+exp.eval_fn()

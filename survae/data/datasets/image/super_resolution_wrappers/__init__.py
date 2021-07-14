@@ -6,3 +6,5 @@ from survae.data.datasets.image.super_resolution_wrappers.imagenet64 import Supe
 from survae.data.datasets.image.super_resolution_wrappers.celeba import SuperResolutionCelebA32Dataset
 from survae.data.datasets.image.super_resolution_wrappers.celeba import SuperResolutionCelebA64Dataset
 from survae.data.datasets.image.super_resolution_wrappers.celeba import SuperResolutionCelebA128Dataset
+from survae.data.datasets.image.super_resolution_wrappers.set5 import Set5Dataset
+from survae.data.datasets.image.super_resolution_wrappers.set14 import Set14Dataset

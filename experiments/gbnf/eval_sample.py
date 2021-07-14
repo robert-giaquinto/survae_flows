@@ -67,10 +67,11 @@ def save_images(imgs, file_path, num_bits=args.num_bits, nrow=eval_args.nrow):
     if not os.path.exists(os.path.dirname(file_path)):
         os.mkdir(os.path.dirname(file_path))
         
-    out = imgs.cpu().float()
-    if out.max().item() > 2:
-        out /= (2**num_bits - 1)
-            
+    max_color = 2.0**num_bits - 1.0
+    out = torch.clamp(imgs.cpu().float(), min=0, max=max_color) / max_color
+    # out = imgs.cpu().float()
+    # if out.max().item() > 2:
+    #     out /= (2**num_bits - 1)            
     vutils.save_image(out, file_path, nrow=nrow)
 
 
